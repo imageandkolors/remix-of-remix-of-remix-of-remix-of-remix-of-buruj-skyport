@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Play } from "lucide-react";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { NewsList } from "@/components/site/NewsList";
-import { newsQuery } from "./index";
+import { newsQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import training from "@/assets/hero-training.jpg";
 import study from "@/assets/hero-study.jpg";

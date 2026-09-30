@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { HeroSlider } from "@/components/site/HeroSlider";
 import { StatsBar } from "@/components/site/StatsBar";
 import { Programmes } from "@/components/site/Programmes";
@@ -7,10 +7,7 @@ import { PathwayFinder } from "@/components/site/PathwayFinder";
 import { NewsList } from "@/components/site/NewsList";
 import { SectionHeading } from "@/components/site/Reveal";
 import { Button } from "@/components/ui/button";
-import { getNews, getProgrammes } from "@/lib/public.functions";
-
-export const programmesQuery = queryOptions({ queryKey: ["programmes"], queryFn: () => getProgrammes() });
-export const newsQuery = queryOptions({ queryKey: ["news"], queryFn: () => getNews() });
+import { newsQuery, programmesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/")({
   head: () => ({
