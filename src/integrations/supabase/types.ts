@@ -14,16 +14,202 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      enquiries: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          programme: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          programme?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          programme?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      news_posts: {
+        Row: {
+          body: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          published: boolean
+          published_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          approved: boolean
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      programmes: {
+        Row: {
+          age_range: string | null
+          fee_amount: number | null
+          fee_confirmed: boolean
+          fee_period: string | null
+          id: string
+          inclusions: string[]
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          age_range?: string | null
+          fee_amount?: number | null
+          fee_confirmed?: boolean
+          fee_period?: string | null
+          id?: string
+          inclusions?: string[]
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          age_range?: string | null
+          fee_amount?: number | null
+          fee_confirmed?: boolean
+          fee_period?: string | null
+          id?: string
+          inclusions?: string[]
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trial_registrations: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          guardian_email: string | null
+          guardian_name: string
+          guardian_phone: string
+          id: string
+          player_name: string
+          position: string | null
+          programme: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          guardian_email?: string | null
+          guardian_name: string
+          guardian_phone: string
+          id?: string
+          player_name: string
+          position?: string | null
+          programme?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          guardian_email?: string | null
+          guardian_name?: string
+          guardian_phone?: string
+          id?: string
+          player_name?: string
+          position?: string | null
+          programme?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "parent" | "player" | "coach" | "admin" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +336,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["parent", "player", "coach", "admin", "owner"],
+    },
   },
 } as const
