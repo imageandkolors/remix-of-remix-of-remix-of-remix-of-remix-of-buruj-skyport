@@ -21,7 +21,7 @@ export function HeroSlider() {
     return () => clearInterval(t);
   }, [i]);
   const go = (d: number) => setI((p) => (p + d + SLIDES.length) % SLIDES.length);
-  const s = SLIDES[i];
+  const s = SLIDES[i]!;
 
   return (
     <section className="relative h-[82vh] min-h-[560px] overflow-hidden bg-navy text-navy-foreground">

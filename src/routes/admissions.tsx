@@ -52,16 +52,20 @@ function Admissions() {
     e.preventDefault();
     const form = e.currentTarget;
     const parsed = schema.safeParse(Object.fromEntries(new FormData(form)));
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Check the form"); return; }
     setLoading(true);
     const d = parsed.data;
     const { error } = await supabase.from("trial_registrations").insert({
-      ...d,
+      player_name: d.player_name,
+      guardian_name: d.guardian_name,
+      guardian_phone: d.guardian_phone,
+      position: d.position || null,
+      programme: d.programme || null,
       date_of_birth: d.date_of_birth || null,
       guardian_email: d.guardian_email || null,
     });
     setLoading(false);
-    if (error) return toast.error("Could not submit. Please try again.");
+    if (error) { toast.error("Could not submit. Please try again."); return; }
     toast.success("Trial registration received! Our team will contact you.");
     form.reset();
   }

@@ -37,11 +37,11 @@ function Contact() {
     e.preventDefault();
     const form = e.currentTarget;
     const parsed = schema.safeParse(Object.fromEntries(new FormData(form)));
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Check the form"); return; }
     setLoading(true);
-    const { error } = await supabase.from("enquiries").insert({ ...parsed.data, email: parsed.data.email || null });
+    const { error } = await supabase.from("enquiries").insert({ name: parsed.data.name, message: parsed.data.message, phone: parsed.data.phone || null, programme: parsed.data.programme || null, email: parsed.data.email || null });
     setLoading(false);
-    if (error) return toast.error("Could not send. Please try again.");
+    if (error) { toast.error("Could not send. Please try again."); return; }
     toast.success("Thanks! Our admissions team will be in touch.");
     form.reset();
   }

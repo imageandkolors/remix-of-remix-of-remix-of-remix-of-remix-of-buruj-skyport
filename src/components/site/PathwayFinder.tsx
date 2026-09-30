@@ -33,9 +33,9 @@ export function PathwayFinder() {
           {!done ? (
             <div key={step} className="animate-rise">
               <p className="font-display text-sm uppercase tracking-widest text-sky">Step {step + 1} of 3</p>
-              <h3 className="mt-2 text-3xl font-bold uppercase">{STEPS[step].q}</h3>
+              <h3 className="mt-2 text-3xl font-bold uppercase">{STEPS[step]!.q}</h3>
               <div className="mt-6 grid gap-3">
-                {STEPS[step].opts.map((o) => (
+                {STEPS[step]!.opts.map((o) => (
                   <button key={o.v} onClick={() => setAnswers([...answers, o.v])} className="rounded-lg border border-navy-foreground/20 px-5 py-4 text-left text-lg font-medium transition-all hover:border-gold hover:bg-gold hover:text-gold-foreground">
                     {o.l}
                   </button>
