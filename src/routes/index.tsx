@@ -1,24 +1,57 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { HeroSlider } from "@/components/site/HeroSlider";
+import { StatsBar } from "@/components/site/StatsBar";
+import { Programmes } from "@/components/site/Programmes";
+import { PathwayFinder } from "@/components/site/PathwayFinder";
+import { NewsList } from "@/components/site/NewsList";
+import { SectionHeading } from "@/components/site/Reveal";
+import { Button } from "@/components/ui/button";
+import { getNews, getProgrammes } from "@/lib/public.functions";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+export const programmesQuery = queryOptions({ queryKey: ["programmes"], queryFn: () => getProgrammes() });
+export const newsQuery = queryOptions({ queryKey: ["news"], queryFn: () => getNews() });
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Buruj Sports Academy — Elite Football & Play & Study, Lagos" },
+      { name: "description", content: "Residential football academy in Ikorodu, Lagos since 2013. Play & Study (JSS 1 – SS 3), Football Camping and international trials in the UK, Spain and Italy." },
+      { property: "og:title", content: "Buruj Sports Academy — Elite Football & Play & Study" },
+      { property: "og:description", content: "Residential football development and schooling in Ikorodu, Lagos, with international trial pathways." },
+    ],
+  }),
+  loader: ({ context }) =>
+    Promise.all([context.queryClient.ensureQueryData(programmesQuery), context.queryClient.ensureQueryData(newsQuery)]),
+  errorComponent: () => <p className="p-10 text-center">We couldn't load this page. Please refresh.</p>,
+  notFoundComponent: () => <p className="p-10 text-center">Not found.</p>,
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const { data: programmes } = useSuspenseQuery(programmesQuery);
+  const { data: news } = useSuspenseQuery(newsQuery);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <HeroSlider />
+      <StatsBar />
+      <Programmes programmes={programmes} />
+      <PathwayFinder />
+      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <SectionHeading eyebrow="Latest" title="Academy news" />
+          <Button asChild variant="outline" className="font-display font-bold uppercase"><Link to="/gallery">Media & matchday</Link></Button>
+        </div>
+        <NewsList news={news.slice(0, 3)} />
+      </section>
+      <section className="bg-gold">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center">
+          <h2 className="text-4xl font-extrabold uppercase text-gold-foreground sm:text-5xl">Ready to step onto the pitch?</h2>
+          <Button asChild size="lg" className="bg-navy font-display text-base font-bold uppercase text-navy-foreground hover:bg-navy/90">
+            <Link to="/admissions" hash="trial">Register for a trial match</Link>
+          </Button>
+        </div>
+      </section>
+    </>
   );
 }
