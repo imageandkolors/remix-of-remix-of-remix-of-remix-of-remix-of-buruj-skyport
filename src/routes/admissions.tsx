@@ -40,6 +40,7 @@ function Admissions() {
           <p className="animate-rise font-display uppercase tracking-[0.3em] text-gold">Admissions</p>
           <h1 className="animate-rise mt-3 max-w-3xl text-6xl font-extrabold uppercase leading-[0.9] sm:text-7xl">Your journey starts here</h1>
           <p className="animate-rise mt-5 max-w-xl text-lg text-navy-foreground/80">Applications are fully online, end to end. Every application is reviewed and approved by our admissions team.</p>
+          <Button asChild size="lg" className="animate-rise mt-8 bg-gold font-display text-base font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/apply">Start online application</Link></Button>
         </div>
       </section>
 
