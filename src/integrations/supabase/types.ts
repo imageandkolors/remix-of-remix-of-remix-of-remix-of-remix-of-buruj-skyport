@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          consent: boolean
+          created_at: string
+          current_class: string | null
+          current_school: string | null
+          date_of_birth: string | null
+          gender: string | null
+          guardian_email: string | null
+          guardian_name: string
+          guardian_phone: string
+          guardian_relationship: string | null
+          id: string
+          medical_notes: string | null
+          motivation: string | null
+          player_name: string
+          position: string | null
+          programme: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          consent?: boolean
+          created_at?: string
+          current_class?: string | null
+          current_school?: string | null
+          date_of_birth?: string | null
+          gender?: string | null
+          guardian_email?: string | null
+          guardian_name: string
+          guardian_phone: string
+          guardian_relationship?: string | null
+          id?: string
+          medical_notes?: string | null
+          motivation?: string | null
+          player_name: string
+          position?: string | null
+          programme: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          consent?: boolean
+          created_at?: string
+          current_class?: string | null
+          current_school?: string | null
+          date_of_birth?: string | null
+          gender?: string | null
+          guardian_email?: string | null
+          guardian_name?: string
+          guardian_phone?: string
+          guardian_relationship?: string | null
+          id?: string
+          medical_notes?: string | null
+          motivation?: string | null
+          player_name?: string
+          position?: string | null
+          programme?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       enquiries: {
         Row: {
           created_at: string
