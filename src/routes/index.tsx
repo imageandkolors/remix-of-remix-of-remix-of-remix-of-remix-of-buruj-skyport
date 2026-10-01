@@ -8,6 +8,7 @@ import { NewsList } from "@/components/site/NewsList";
 import { SectionHeading } from "@/components/site/Reveal";
 import { Button } from "@/components/ui/button";
 import { newsQuery, programmesQuery } from "@/lib/queries";
+import { useTrialSheet } from "@/components/site/TrialForm";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { data: programmes } = useSuspenseQuery(programmesQuery);
   const { data: news } = useSuspenseQuery(newsQuery);
+  const { open: openTrial } = useTrialSheet();
   return (
     <>
       <HeroSlider />
@@ -44,9 +46,14 @@ function Index() {
       <section className="bg-gold">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center">
           <h2 className="text-4xl font-extrabold uppercase text-gold-foreground sm:text-5xl">Ready to step onto the pitch?</h2>
-          <Button asChild size="lg" className="bg-navy font-display text-base font-bold uppercase text-navy-foreground hover:bg-navy/90">
-            <Link to="/admissions" hash="trial">Register for a trial match</Link>
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button size="lg" onClick={openTrial} className="bg-navy font-display text-base font-bold uppercase text-navy-foreground hover:bg-navy/90">
+              Register for a trial match
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-navy bg-transparent font-display text-base font-bold uppercase text-navy hover:bg-navy hover:text-navy-foreground">
+              <Link to="/apply">Apply online</Link>
+            </Button>
+          </div>
         </div>
       </section>
     </>

@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Crest } from "./Crest";
 import { Button } from "@/components/ui/button";
+import { useTrialSheet } from "./TrialForm";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -14,6 +15,7 @@ const NAV = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { open: openTrial } = useTrialSheet();
   return (
     <header className="sticky top-0 z-50 border-b border-navy-foreground/10 bg-navy/95 text-navy-foreground backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -35,8 +37,8 @@ export function Header() {
               {n.label}
             </Link>
           ))}
-          <Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
-            <Link to="/admissions" hash="trial">Register for trials</Link>
+          <Button onClick={openTrial} className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
+            Register for trials
           </Button>
         </nav>
         <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
@@ -50,6 +52,9 @@ export function Header() {
               {n.label}
             </Link>
           ))}
+          <Button onClick={() => { setOpen(false); openTrial(); }} className="mt-2 bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
+            Register for trials
+          </Button>
         </nav>
       )}
     </header>

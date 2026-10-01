@@ -54,7 +54,7 @@ export function PathwayFinder() {
               <p className="mt-3 text-lg text-navy-foreground/85">{result.body}</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
-                  <Link to="/admissions">Begin application</Link>
+                  <Link to="/apply">Begin application</Link>
                 </Button>
                 <Button variant="ghost" onClick={() => setAnswers([])} className="font-display uppercase text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground">
                   <RotateCcw className="h-4 w-4" /> Start again
