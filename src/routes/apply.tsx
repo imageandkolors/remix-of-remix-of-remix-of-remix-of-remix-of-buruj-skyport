@@ -137,7 +137,7 @@ function Apply() {
                   <F k="date_of_birth" label="Date of birth *" type="date" data={data} set={set} />
                   <div className="space-y-1.5">
                     <Label htmlFor="gender">Gender</Label>
-                    <select id="gender" value={data.gender} onChange={set("gender")} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <select id="gender" value={data["gender"]} onChange={set("gender")} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
                       <option value="">Select</option><option>Male</option><option>Female</option>
                     </select>
                   </div>
@@ -157,15 +157,15 @@ function Apply() {
               )}
               {step === 3 && (
                 <div className="grid gap-4">
-                  <div className="space-y-1.5"><Label htmlFor="medical_notes">Medical conditions, allergies or injuries</Label><Textarea id="medical_notes" value={data.medical_notes ?? ""} onChange={set("medical_notes")} rows={3} /></div>
-                  <div className="space-y-1.5"><Label htmlFor="motivation">Why does the player want to join Buruj?</Label><Textarea id="motivation" value={data.motivation ?? ""} onChange={set("motivation")} rows={4} /></div>
+                  <div className="space-y-1.5"><Label htmlFor="medical_notes">Medical conditions, allergies or injuries</Label><Textarea id="medical_notes" value={data["medical_notes"] ?? ""} onChange={set("medical_notes")} rows={3} /></div>
+                  <div className="space-y-1.5"><Label htmlFor="motivation">Why does the player want to join Buruj?</Label><Textarea id="motivation" value={data["motivation"] ?? ""} onChange={set("motivation")} rows={4} /></div>
                 </div>
               )}
               {step === 4 && (
                 <div className="space-y-4">
                   <dl className="grid gap-x-6 gap-y-3 rounded-lg bg-secondary p-5 sm:grid-cols-2">
                     {[["Programme", "programme"], ["Player", "player_name"], ["Date of birth", "date_of_birth"], ["Position", "position"], ["School / class", "current_school"], ["Guardian", "guardian_name"], ["Phone", "guardian_phone"], ["Email", "guardian_email"]].map(([l, k]) => (
-                      <div key={k}><dt className="font-display text-xs uppercase tracking-wider text-muted-foreground">{l}</dt><dd className="font-medium text-navy">{k === "current_school" ? [data.current_school, data.current_class].filter(Boolean).join(" · ") || "—" : data[k!] || "—"}</dd></div>
+                      <div key={k}><dt className="font-display text-xs uppercase tracking-wider text-muted-foreground">{l}</dt><dd className="font-medium text-navy">{k === "current_school" ? [data["current_school"], data["current_class"]].filter(Boolean).join(" · ") || "—" : data[k!] || "—"}</dd></div>
                     ))}
                   </dl>
                   <label className="flex items-start gap-3 text-sm">
