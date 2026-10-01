@@ -71,13 +71,13 @@ function Apply() {
     const n = (k: string) => data[k]?.trim() || null;
     const { error } = await supabase.from("applications").insert({
       user_id: u.user?.id ?? null,
-      programme: data.programme!,
-      player_name: data.player_name!.trim(),
+      programme: data["programme"]!,
+      player_name: data["player_name"]!.trim(),
       date_of_birth: n("date_of_birth"),
       gender: n("gender"), position: n("position"),
       current_school: n("current_school"), current_class: n("current_class"),
-      guardian_name: data.guardian_name!.trim(), guardian_relationship: n("guardian_relationship"),
-      guardian_phone: data.guardian_phone!.trim(), guardian_email: n("guardian_email"),
+      guardian_name: data["guardian_name"]!.trim(), guardian_relationship: n("guardian_relationship"),
+      guardian_phone: data["guardian_phone"]!.trim(), guardian_email: n("guardian_email"),
       address: n("address"), medical_notes: n("medical_notes"), motivation: n("motivation"),
       consent: true,
     });
@@ -100,7 +100,7 @@ function Apply() {
           <div className="animate-rise rounded-xl border-t-4 border-gold bg-card p-10 text-center shadow-xl">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gold text-gold-foreground"><Check className="h-8 w-8" /></div>
             <h2 className="mt-5 text-4xl font-extrabold uppercase text-navy">Application received</h2>
-            <p className="mt-3 text-muted-foreground">Thank you. Our admissions team will contact {data.guardian_name} on {data.guardian_phone} with next steps.</p>
+            <p className="mt-3 text-muted-foreground">Thank you. Our admissions team will contact {data["guardian_name"]} on {data["guardian_phone"]} with next steps.</p>
             <Button asChild className="mt-6 font-display font-bold uppercase"><Link to="/">Back to home</Link></Button>
           </div>
         ) : (
@@ -124,7 +124,7 @@ function Apply() {
                     { v: "Football Camping", b: "Intensive residential football programme, ages 9 – 22." },
                   ].map((p) => (
                     <button type="button" key={p.v} onClick={() => setData({ ...data, programme: p.v })}
-                      className={cn("rounded-lg border-2 p-5 text-left transition-all", data.programme === p.v ? "border-gold bg-gold/10" : "border-border hover:border-primary")}>
+                      className={cn("rounded-lg border-2 p-5 text-left transition-all", data["programme"] === p.v ? "border-gold bg-gold/10" : "border-border hover:border-primary")}>
                       <span className="font-display text-2xl font-bold uppercase text-navy">{p.v}</span>
                       <p className="mt-1 text-sm text-muted-foreground">{p.b}</p>
                     </button>
