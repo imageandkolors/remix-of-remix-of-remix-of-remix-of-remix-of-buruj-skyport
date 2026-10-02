@@ -34,7 +34,10 @@ export type Database = {
           player_name: string
           position: string | null
           programme: string
+          reference_number: string
+          reviewer_id: string | null
           status: string
+          status_changed_at: string
           updated_at: string
           user_id: string | null
         }
@@ -57,7 +60,10 @@ export type Database = {
           player_name: string
           position?: string | null
           programme: string
+          reference_number?: string
+          reviewer_id?: string | null
           status?: string
+          status_changed_at?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -80,11 +86,22 @@ export type Database = {
           player_name?: string
           position?: string | null
           programme?: string
+          reference_number?: string
+          reviewer_id?: string | null
           status?: string
+          status_changed_at?: string
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "applications_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enquiries: {
         Row: {
@@ -278,6 +295,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
