@@ -17,8 +17,9 @@ import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
-import { Route as PlayersRouteImport } from './routes/players'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as PlayersIndexRouteImport } from './routes/players.index'
+import { Route as PlayersSlugRouteImport } from './routes/players.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,15 +60,20 @@ const GalleryRoute = GalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlayersRoute = PlayersRouteImport.update({
-  id: '/players',
-  path: '/players',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const PlayersIndexRoute = PlayersIndexRouteImport.update({
+  id: '/players/',
+  path: '/players/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayersSlugRoute = PlayersSlugRouteImport.update({
+  id: '/players/$slug',
+  path: '/players/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -78,8 +84,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
-  '/players': typeof PlayersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/players/$slug': typeof PlayersSlugRoute
+  '/players/': typeof PlayersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -89,8 +96,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
-  '/players': typeof PlayersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/players/$slug': typeof PlayersSlugRoute
+  '/players': typeof PlayersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -102,8 +110,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
-  '/players': typeof PlayersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/players/$slug': typeof PlayersSlugRoute
+  '/players/': typeof PlayersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,8 +124,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
-    | '/players'
     | '/dashboard'
+    | '/players/$slug'
+    | '/players/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -126,8 +136,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
-    | '/players'
     | '/dashboard'
+    | '/players/$slug'
+    | '/players'
   id:
     | '__root__'
     | '/'
@@ -138,8 +149,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
-    | '/players'
     | '/_authenticated/dashboard'
+    | '/players/$slug'
+    | '/players/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,7 +163,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
-  PlayersRoute: typeof PlayersRoute
+  PlayersSlugRoute: typeof PlayersSlugRoute
+  PlayersIndexRoute: typeof PlayersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -212,19 +225,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/players': {
-      id: '/players'
-      path: '/players'
-      fullPath: '/players'
-      preLoaderRoute: typeof PlayersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/players/': {
+      id: '/players/'
+      path: '/players'
+      fullPath: '/players/'
+      preLoaderRoute: typeof PlayersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/players/$slug': {
+      id: '/players/$slug'
+      path: '/players/$slug'
+      fullPath: '/players/$slug'
+      preLoaderRoute: typeof PlayersSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -249,7 +269,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
-  PlayersRoute: PlayersRoute,
+  PlayersSlugRoute: PlayersSlugRoute,
+  PlayersIndexRoute: PlayersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
