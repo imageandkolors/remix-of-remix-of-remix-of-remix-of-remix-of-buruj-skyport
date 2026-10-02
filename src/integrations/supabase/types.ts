@@ -166,68 +166,230 @@ export type Database = {
         }
         Relationships: []
       }
+      player_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          kind: string
+          player_id: string
+          sort: number
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          player_id: string
+          sort?: number
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          player_id?: string
+          sort?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_media_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_milestones: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          phase: string
+          player_id: string
+          sort: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          phase: string
+          player_id: string
+          sort?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          phase?: string
+          player_id?: string
+          sort?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_milestones_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          cv_summary: string | null
           date_of_birth: string | null
+          finishing: number | null
           full_name: string
           height_cm: number | null
           id: string
           is_published: boolean
           jersey_number: number | null
+          joined_on: string | null
           nationality: string | null
+          overall_rating: number | null
+          pace: number | null
+          passing: number | null
+          physical: number | null
           position: string
           preferred_foot: string | null
           programme: string | null
           secondary_position: string | null
           slug: string
+          tactical: number | null
+          technical: number | null
           updated_at: string
           user_id: string | null
+          video_cv_url: string | null
           weight_kg: number | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          cv_summary?: string | null
           date_of_birth?: string | null
+          finishing?: number | null
           full_name: string
           height_cm?: number | null
           id?: string
           is_published?: boolean
           jersey_number?: number | null
+          joined_on?: string | null
           nationality?: string | null
+          overall_rating?: number | null
+          pace?: number | null
+          passing?: number | null
+          physical?: number | null
           position?: string
           preferred_foot?: string | null
           programme?: string | null
           secondary_position?: string | null
           slug: string
+          tactical?: number | null
+          technical?: number | null
           updated_at?: string
           user_id?: string | null
+          video_cv_url?: string | null
           weight_kg?: number | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          cv_summary?: string | null
           date_of_birth?: string | null
+          finishing?: number | null
           full_name?: string
           height_cm?: number | null
           id?: string
           is_published?: boolean
           jersey_number?: number | null
+          joined_on?: string | null
           nationality?: string | null
+          overall_rating?: number | null
+          pace?: number | null
+          passing?: number | null
+          physical?: number | null
           position?: string
           preferred_foot?: string | null
           programme?: string | null
           secondary_position?: string | null
           slug?: string
+          tactical?: number | null
+          technical?: number | null
           updated_at?: string
           user_id?: string | null
+          video_cv_url?: string | null
           weight_kg?: number | null
         }
         Relationships: []
+      }
+      player_season_stats: {
+        Row: {
+          appearances: number
+          assists: number
+          clean_sheets: number
+          created_at: string
+          goals: number
+          id: string
+          minutes: number
+          motm: number
+          player_id: string
+          red_cards: number
+          season: string
+          yellow_cards: number
+        }
+        Insert: {
+          appearances?: number
+          assists?: number
+          clean_sheets?: number
+          created_at?: string
+          goals?: number
+          id?: string
+          minutes?: number
+          motm?: number
+          player_id: string
+          red_cards?: number
+          season: string
+          yellow_cards?: number
+        }
+        Update: {
+          appearances?: number
+          assists?: number
+          clean_sheets?: number
+          created_at?: string
+          goals?: number
+          id?: string
+          minutes?: number
+          motm?: number
+          player_id?: string
+          red_cards?: number
+          season?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -360,6 +522,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      player_is_public: { Args: { _player: string }; Returns: boolean }
     }
     Enums: {
       app_role: "parent" | "player" | "coach" | "admin" | "owner"
