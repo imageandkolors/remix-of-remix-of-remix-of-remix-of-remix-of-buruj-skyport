@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep staff-only pages under the `_authenticated` route and enforce every private data operation again in authenticated server functions, because navigation guards are not a security boundary.
