@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search.redirect === "string" && search.redirect.startsWith("/") ? search.redirect : "/dashboard",
+    redirect: typeof search["redirect"] === "string" && search["redirect"].startsWith("/") ? search["redirect"] : "/dashboard",
   }),
   head: () => ({ meta: [
     { title: "Staff Sign In — Buruj Sports Academy" },
@@ -36,7 +36,7 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error("Email or password is incorrect");
+    if (error) { toast.error("Email or password is incorrect"); return; }
     navigate({ to: redirect });
   }
 
