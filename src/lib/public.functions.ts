@@ -36,3 +36,13 @@ export const getNews = createServerFn({ method: "GET" }).handler(async () => {
   if (error) throw new Error(error.message);
   return data ?? [];
 });
+
+export const getPlayers = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await publicClient()
+    .from("player_profiles")
+    .select("slug, full_name, jersey_number, position, secondary_position, preferred_foot, date_of_birth, programme, avatar_url")
+    .eq("is_published", true)
+    .order("jersey_number", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+});
