@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
@@ -7,7 +7,7 @@ import { Reveal } from "@/components/site/Reveal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/players")({
+export const Route = createFileRoute("/players/")({
   head: () => ({
     meta: [
       { title: "Squad & Player Profiles — Buruj Sports Academy" },
@@ -95,7 +95,7 @@ function Players() {
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((p, i) => (
               <Reveal key={p.slug} delay={(i % 3) * 80}>
-                <article className="glow-hover group overflow-hidden rounded-xl border bg-card">
+                <Link to="/players/$slug" params={{ slug: p.slug }} className="block"><article className="glow-hover group overflow-hidden rounded-xl border bg-card">
                   <div className="relative flex h-56 items-end justify-between bg-gradient-to-br from-navy to-primary p-5 text-navy-foreground">
                     {p.avatar_url ? (
                       <img src={p.avatar_url} alt={p.full_name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
@@ -113,9 +113,9 @@ function Players() {
                       <div><dt className="text-xs uppercase text-muted-foreground">Foot</dt><dd className="font-display text-xl font-bold text-navy">{p.preferred_foot ?? "–"}</dd></div>
                       <div><dt className="text-xs uppercase text-muted-foreground">Prog.</dt><dd className="font-display text-sm font-bold leading-7 text-navy">{p.programme === "Play & Study" ? "P&S" : p.programme ? "Camp" : "–"}</dd></div>
                     </dl>
-                    <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-primary">Full profile coming soon</p>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-primary">View full profile →</p>
                   </div>
-                </article>
+                </article></Link>
               </Reveal>
             ))}
           </div>
