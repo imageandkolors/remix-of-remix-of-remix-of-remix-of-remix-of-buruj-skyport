@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, ClipboardCheck, Clock3, PhoneCall } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +55,7 @@ function Apply() {
   const [data, setData] = useState<Data>({ programme: "", gender: "" });
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setData({ ...data, [k]: e.target.value });
 
   function next() {
@@ -69,7 +69,7 @@ function Apply() {
     setLoading(true);
     const { data: u } = await supabase.auth.getUser();
     const n = (k: string) => data[k]?.trim() || null;
-    const { error } = await supabase.from("applications").insert({
+    const { data: submitted, error } = await supabase.from("applications").insert({
       user_id: u.user?.id ?? null,
       programme: data["programme"]!,
       player_name: data["player_name"]!.trim(),
@@ -80,10 +80,10 @@ function Apply() {
       guardian_phone: data["guardian_phone"]!.trim(), guardian_email: n("guardian_email"),
       address: n("address"), medical_notes: n("medical_notes"), motivation: n("motivation"),
       consent: true,
-    });
+    }).select("reference_number").single();
     setLoading(false);
     if (error) { toast.error("Could not submit your application. Please try again."); return; }
-    setDone(true);
+    setReference(submitted.reference_number);
   }
 
   return (
@@ -96,12 +96,16 @@ function Apply() {
         </div>
       </section>
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-        {done ? (
-          <div className="animate-rise rounded-xl border-t-4 border-gold bg-card p-10 text-center shadow-xl">
+        {reference ? (
+          <div className="animate-rise rounded-lg border-t-4 border-gold bg-card p-7 shadow-xl sm:p-10">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gold text-gold-foreground"><Check className="h-8 w-8" /></div>
-            <h2 className="mt-5 text-4xl font-extrabold uppercase text-navy">Application received</h2>
-            <p className="mt-3 text-muted-foreground">Thank you. Our admissions team will contact {data["guardian_name"]} on {data["guardian_phone"]} with next steps.</p>
-            <Button asChild className="mt-6 font-display font-bold uppercase"><Link to="/">Back to home</Link></Button>
+            <div className="text-center"><h2 className="mt-5 text-4xl font-extrabold uppercase text-navy">Application received</h2><p className="mt-2 text-muted-foreground">Keep this reference number for every conversation with admissions.</p><p className="mx-auto mt-5 w-fit rounded-md bg-navy px-5 py-3 font-mono text-xl font-bold text-navy-foreground">{reference}</p></div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <NextStep icon={ClipboardCheck} title="Review" text="Admissions checks the submitted details and documents." />
+              <NextStep icon={PhoneCall} title="Contact" text={`We will contact ${data["guardian_name"]} using ${data["guardian_phone"]}.`} />
+              <NextStep icon={Clock3} title="Decision" text="Shortlisted players receive trial or enrolment instructions." />
+            </div>
+            <div className="mt-8 flex justify-center"><Button asChild className="font-display font-bold uppercase"><Link to="/">Back to home</Link></Button></div>
           </div>
         ) : (
           <>
@@ -189,6 +193,10 @@ function Apply() {
       </section>
     </>
   );
+}
+
+function NextStep({ icon: Icon, title, text }: { icon: typeof ClipboardCheck; title: string; text: string }) {
+  return <div className="rounded-md border bg-secondary p-4"><Icon className="h-5 w-5 text-primary" /><p className="mt-3 font-display text-lg font-bold uppercase text-navy">{title}</p><p className="mt-1 text-sm text-muted-foreground">{text}</p></div>;
 }
 
 function F({ k, label, type = "text", data, set }: { k: string; label: string; type?: string; data: Data; set: (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
