@@ -8,6 +8,7 @@ import { useTrialSheet } from "./TrialForm";
 const NAV = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
+  { to: "/players", label: "Squad" },
   { to: "/admissions", label: "Admissions" },
   { to: "/gallery", label: "Media" },
   { to: "/contact", label: "Contact" },

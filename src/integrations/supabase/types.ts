@@ -166,6 +166,69 @@ export type Database = {
         }
         Relationships: []
       }
+      player_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          date_of_birth: string | null
+          full_name: string
+          height_cm: number | null
+          id: string
+          is_published: boolean
+          jersey_number: number | null
+          nationality: string | null
+          position: string
+          preferred_foot: string | null
+          programme: string | null
+          secondary_position: string | null
+          slug: string
+          updated_at: string
+          user_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name: string
+          height_cm?: number | null
+          id?: string
+          is_published?: boolean
+          jersey_number?: number | null
+          nationality?: string | null
+          position?: string
+          preferred_foot?: string | null
+          programme?: string | null
+          secondary_position?: string | null
+          slug: string
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string
+          height_cm?: number | null
+          id?: string
+          is_published?: boolean
+          jersey_number?: number | null
+          nationality?: string | null
+          position?: string
+          preferred_foot?: string | null
+          programme?: string | null
+          secondary_position?: string | null
+          slug?: string
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved: boolean
