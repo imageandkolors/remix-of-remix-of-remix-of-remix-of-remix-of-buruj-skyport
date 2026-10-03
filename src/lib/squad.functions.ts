@@ -93,14 +93,17 @@ const childSchema = z.discriminatedUnion("table", [
   }) }),
 ]);
 
+export type PlayerItemInput = z.infer<typeof childSchema>;
+
 export const addPlayerItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => childSchema.parse(d))
   .handler(async ({ context, data }) => {
     await requireStaff(context);
+    const sb = context.supabase as any;
     const q = data.table === "player_season_stats"
-      ? context.supabase.from(data.table).upsert(data.row, { onConflict: "player_id,season" })
-      : context.supabase.from(data.table).insert(data.row);
+      ? sb.from(data.table).upsert(data.row, { onConflict: "player_id,season" })
+      : sb.from(data.table).insert(data.row);
     const { error } = await q;
     if (error) throw new Error("Could not save item");
     return { ok: true };

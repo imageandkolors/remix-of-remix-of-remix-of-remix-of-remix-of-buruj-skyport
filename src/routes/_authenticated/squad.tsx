@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Crest } from "@/components/site/Crest";
-import { addPlayerItem, deletePlayerItem, getSquadPlayer, listSquad, savePlayer } from "@/lib/squad.functions";
+import { type PlayerItemInput, addPlayerItem, deletePlayerItem, getSquadPlayer, listSquad, savePlayer } from "@/lib/squad.functions";
 
 export const Route = createFileRoute("/_authenticated/squad")({
   head: () => ({ meta: [
@@ -172,7 +172,7 @@ function Extras({ id, data }: { id: string; data: Detail }) {
   const [ms, setMs] = useState({ phase: "now", title: "", description: "", event_date: "" });
   const [md, setMd] = useState({ kind: "photo", url: "", caption: "" });
 
-  async function add(payload: Parameters<typeof addPlayerItem>[0]["data"], reset: () => void) {
+  async function add(payload: PlayerItemInput, reset: () => void) {
     try { await addPlayerItem({ data: payload }); toast.success("Added"); reset(); refresh(); }
     catch { toast.error("Check the fields and try again"); }
   }
