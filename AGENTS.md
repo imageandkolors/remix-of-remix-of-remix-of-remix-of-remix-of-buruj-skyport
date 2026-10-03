@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep staff-only pages under the `_authenticated` route and enforce every private data operation again in authenticated server functions, because navigation guards are not a security boundary.
+- Player profile data lives in player_profiles plus child tables (season stats, milestones, media); public reads go through public server functions filtered to published players, and staff edits go through authenticated server functions that re-check the staff role, because RLS alone shouldn't be the only guard.
