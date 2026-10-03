@@ -7,5 +7,5 @@
 - [x] Add application reference numbers and a clear confirmation state
 - [x] Phase 1 Slice 1: player profiles table + public Squad page
 - [x] Phase 1 Slice 2: FIFA-standard player profile page
-- [ ] Phase 1 Slice 3: coach player editor in dashboard
+- [x] Phase 1 Slice 3: coach player editor in dashboard
 - [ ] Activate guardian status emails — blocked until an owned sender domain is configured

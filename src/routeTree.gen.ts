@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as PlayersSlugRouteImport } from './routes/players.$slug'
 
@@ -65,6 +66,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
+  id: '/squad',
+  path: '/squad',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const PlayersIndexRoute = PlayersIndexRouteImport.update({
   id: '/players/',
   path: '/players/',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/players/': typeof PlayersIndexRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/players': typeof PlayersIndexRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/players/': typeof PlayersIndexRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/dashboard'
+    | '/squad'
     | '/players/$slug'
     | '/players/'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/dashboard'
+    | '/squad'
     | '/players/$slug'
     | '/players'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/_authenticated/dashboard'
+    | '/_authenticated/squad'
     | '/players/$slug'
     | '/players/'
   fileRoutesById: FileRoutesById
@@ -232,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/squad': {
+      id: '/_authenticated/squad'
+      path: '/squad'
+      fullPath: '/squad'
+      preLoaderRoute: typeof AuthenticatedSquadRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/players/': {
       id: '/players/'
       path: '/players'
@@ -251,10 +270,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

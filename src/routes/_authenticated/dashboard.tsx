@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { CalendarDays, ClipboardList, LogOut, Search, UserCheck } from "lucide-react";
@@ -104,7 +104,7 @@ function Dashboard() {
       <header className="border-b bg-navy text-navy-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3"><Crest className="h-12 w-11" /><div><p className="font-display text-xs font-bold uppercase text-gold">Admissions</p><h1 className="font-display text-2xl font-extrabold uppercase">Staff dashboard</h1></div></div>
-          <div className="flex items-center gap-3"><Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge><Button variant="outline" onClick={signOut} className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><LogOut /> Sign out</Button></div>
+          <div className="flex items-center gap-3"><Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge><Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/squad">Squad manager</Link></Button><Button variant="outline" onClick={signOut} className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><LogOut /> Sign out</Button></div>
         </div>
       </header>
 
