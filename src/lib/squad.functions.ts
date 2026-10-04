@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 async function requireStaff(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
@@ -191,7 +192,7 @@ export const completePlayerUpload = createServerFn({ method: "POST" })
       const column = data.purpose === "avatar" ? "avatar_url" : "video_cv_url";
       const { data: old } = await context.supabase.from("player_profiles").select(column).eq("id", data.playerId).single();
       const oldPath = old?.[column as keyof typeof old];
-      const { error } = await context.supabase.from("player_profiles").update({ [column]: data.path }).eq("id", data.playerId);
+      const { error } = await context.supabase.from("player_profiles").update({ [column]: data.path } as TablesUpdate<"player_profiles">).eq("id", data.playerId);
       if (error) throw new Error("Could not attach uploaded file");
       if (typeof oldPath === "string" && !/^https?:\/\//.test(oldPath)) await context.supabase.storage.from("player-profile-media").remove([oldPath]);
     } else if (data.purpose === "media") {
@@ -221,7 +222,7 @@ export const removePlayerFile = createServerFn({ method: "POST" })
       const column = data.type === "avatar" ? "avatar_url" : "video_cv_url";
       const { data: row } = await context.supabase.from("player_profiles").select(column).eq("id", data.playerId).single();
       const path = row?.[column as keyof typeof row];
-      await context.supabase.from("player_profiles").update({ [column]: null }).eq("id", data.playerId);
+      await context.supabase.from("player_profiles").update({ [column]: null } as TablesUpdate<"player_profiles">).eq("id", data.playerId);
       if (typeof path === "string" && !/^https?:\/\//.test(path)) await context.supabase.storage.from("player-profile-media").remove([path]);
     } else {
       if (!data.id) throw new Error("Missing record");
