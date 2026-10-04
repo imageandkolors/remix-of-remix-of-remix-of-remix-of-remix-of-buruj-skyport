@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Crest } from "@/components/site/Crest";
+import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { getStaffDashboard, updateApplicationReview } from "@/lib/staff.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -103,7 +103,7 @@ function Dashboard() {
     <div className="min-h-screen bg-secondary">
       <header className="border-b bg-navy text-navy-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3"><Crest className="h-12 w-11" /><div><p className="font-display text-xs font-bold uppercase text-gold">Admissions</p><h1 className="font-display text-2xl font-extrabold uppercase">Staff dashboard</h1></div></div>
+          <div className="flex items-center gap-3"><img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto rounded bg-white px-2 py-1" /><div><p className="font-display text-xs font-bold uppercase text-gold">Admissions</p><h1 className="font-display text-2xl font-extrabold uppercase">Staff dashboard</h1></div></div>
           <div className="flex items-center gap-3"><Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge><Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/squad">Squad manager</Link></Button><Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><Link to="/programmes">Programmes</Link></Button><Button variant="outline" onClick={signOut} className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><LogOut /> Sign out</Button></div>
         </div>
       </header>
