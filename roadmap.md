@@ -14,5 +14,6 @@
 - [x] Upgrade Squad hero and player cards with academy/player imagery
 - [x] Cleared copied Drizzle migrations and rescaffolded an empty migration set
 - [x] Restored the three programme entries (Camping ₦450k/month, Football & Education ₦5.5M/session, Development ₦4.5M/season) after the remix reset
-- [ ] Player roster, news, and application data are empty after the remix — restore demo/replacement content or re-enter real records
+- [x] Restored programmes, sample players and news after the remix
+- [x] Programme detail pages and admin programme manager
 - [ ] Activate guardian status emails — blocked until an owned sender domain is configured

@@ -94,7 +94,7 @@ export function Programmes({ programmes }: { programmes: Programme[] }) {
                       <p className="font-display text-xl font-bold text-navy">{formatFee(p)}</p>
                     </div>
                     <Button asChild className="font-display font-bold uppercase">
-                      <Link to="/admissions">Apply now</Link>
+                      <Link to="/programmes/$slug" params={{ slug: p.slug }}>View details</Link>
                     </Button>
                   </div>
                 </div>
