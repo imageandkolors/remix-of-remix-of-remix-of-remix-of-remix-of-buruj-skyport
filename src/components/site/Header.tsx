@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { Crest } from "./Crest";
+import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { useTrialSheet } from "./TrialForm";
 
@@ -21,10 +21,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-navy-foreground/10 bg-navy/95 text-navy-foreground backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <Crest className="h-10 w-9 shrink-0" />
-          <span className="truncate font-display text-xl font-extrabold uppercase tracking-wide">
-            Buruj <span className="text-gold">Sports Academy</span>
-          </span>
+          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto shrink-0 rounded bg-white/95 px-2 py-1" />
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {NAV.map((n) => (
