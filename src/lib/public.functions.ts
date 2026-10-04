@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { PROGRAMME_COLUMNS, normaliseSections, type Programme } from "./programmes";
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
@@ -17,14 +18,28 @@ function publicClient() {
   });
 }
 
-export const getProgrammes = createServerFn({ method: "GET" }).handler(async () => {
+export const getProgrammes = createServerFn({ method: "GET" }).handler(async (): Promise<Programme[]> => {
   const { data, error } = await publicClient()
     .from("programmes")
-    .select("slug, name, age_range, fee_amount, fee_period, fee_confirmed, inclusions")
-    .order("name", { ascending: false });
+    .select(PROGRAMME_COLUMNS)
+    .eq("is_published", true)
+    .order("display_order", { ascending: true });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).map((p) => ({ ...p, sections: normaliseSections(p.sections) }));
 });
+
+export const getProgramme = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => ({ slug: String(d.slug).slice(0, 120) }))
+  .handler(async ({ data }): Promise<Programme | null> => {
+    const { data: p, error } = await publicClient()
+      .from("programmes")
+      .select(PROGRAMME_COLUMNS)
+      .eq("slug", data.slug)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return p ? { ...p, sections: normaliseSections(p.sections) } : null;
+  });
 
 export const getNews = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await publicClient()
