@@ -553,35 +553,71 @@ export type Database = {
       programmes: {
         Row: {
           age_range: string | null
+          cta_body: string | null
+          cta_label: string | null
+          cta_title: string | null
+          display_order: number
           fee_amount: number | null
           fee_confirmed: boolean
           fee_period: string | null
           id: string
           inclusions: string[]
+          intro: string | null
+          is_published: boolean
           name: string
+          non_refundable: boolean
+          note: string | null
+          sections: Json
+          session_label: string | null
           slug: string
+          tagline: string | null
+          trial_countries: string[]
           updated_at: string
         }
         Insert: {
           age_range?: string | null
+          cta_body?: string | null
+          cta_label?: string | null
+          cta_title?: string | null
+          display_order?: number
           fee_amount?: number | null
           fee_confirmed?: boolean
           fee_period?: string | null
           id?: string
           inclusions?: string[]
+          intro?: string | null
+          is_published?: boolean
           name: string
+          non_refundable?: boolean
+          note?: string | null
+          sections?: Json
+          session_label?: string | null
           slug: string
+          tagline?: string | null
+          trial_countries?: string[]
           updated_at?: string
         }
         Update: {
           age_range?: string | null
+          cta_body?: string | null
+          cta_label?: string | null
+          cta_title?: string | null
+          display_order?: number
           fee_amount?: number | null
           fee_confirmed?: boolean
           fee_period?: string | null
           id?: string
           inclusions?: string[]
+          intro?: string | null
+          is_published?: boolean
           name?: string
+          non_refundable?: boolean
+          note?: string | null
+          sections?: Json
+          session_label?: string | null
           slug?: string
+          tagline?: string | null
+          trial_countries?: string[]
           updated_at?: string
         }
         Relationships: []
