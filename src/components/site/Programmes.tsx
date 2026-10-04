@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, GraduationCap, Tent } from "lucide-react";
+import { Check, GraduationCap, Tent, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal, SectionHeading } from "./Reveal";
 import { FEE_PLACEHOLDER } from "@/lib/site";
@@ -26,6 +26,16 @@ const EXTRA: Record<string, { icon: typeof Check; tagline: string; pathway: stri
     icon: Tent,
     tagline: "Intensive residential football for dedicated players.",
     pathway: ["Trial match registration", "Residential camp training", "Performance evaluation", "International trial showcase"],
+  },
+  "football-education": {
+    icon: GraduationCap,
+    tagline: "Full secondary schooling with elite residential football.",
+    pathway: ["Assessment & admission", "Term-time academics + training", "Squad selection & league matches", "International trial showcase"],
+  },
+  "football-development": {
+    icon: Trophy,
+    tagline: "Full-season development, competition and scouting exposure.",
+    pathway: ["Enrollment & assessment", "Season-long development & tournaments", "Scout showcase events", "NLO pathway recommendation"],
   },
 };
 
