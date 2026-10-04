@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { HeartHandshake, ShieldCheck, Trophy, Users } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { GraduationCap, HeartHandshake, ShieldCheck, Trophy, Users, Globe, Dumbbell, Home } from "lucide-react";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
+import { Button } from "@/components/ui/button";
 import campus from "@/assets/hero-campus.jpg";
 import training from "@/assets/hero-training.jpg";
 
@@ -8,18 +9,34 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About Buruj Sports Academy — Our Story Since 2013" },
-      { name: "description", content: "Founded in 2013 by Dr. Salaudeen Waheed Buruj, Buruj Sports Academy combines certified coaching with a 24/7 welfare team in Ikorodu, Lagos." },
+      { name: "description", content: "Founded in 2013 by Dr. Salaudeen Waheed Buruj, Buruj Sports Academy combines certified coaching, full secondary education and 24/7 welfare in Ikorodu, Lagos." },
       { property: "og:title", content: "About Buruj Sports Academy" },
-      { property: "og:description", content: "Our history, leadership, coaching philosophy and dual-team safety model." },
+      { property: "og:description", content: "Our history, leadership, coaching philosophy, dual-team safety model and pathway to global success." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: About,
 });
 
 const TIMELINE = [
-  { year: "2013", text: "Buruj FC & Sports Academy founded in Ikorodu, Lagos." },
-  { year: "Growth", text: "Residential boarding and the Play & Study programme introduced." },
-  { year: "Today", text: "International trial showcases in the UK, Spain and Italy." },
+  { year: "2013", text: "Buruj FC & Sports Academy founded in Ikorodu, Lagos, to give young Nigerian talent a structured route into professional football." },
+  { year: "Growth", text: "Residential boarding introduced, alongside the Play & Study model combining full secondary education with elite training." },
+  { year: "Today", text: "International trial showcases across the UK, Spain, France, Italy, Portugal, Lithuania and Sweden — plus national team call-ups at U-15, U-17 and U-20 levels." },
+];
+
+const PILLARS = [
+  { icon: Trophy, t: "Certified coaching", b: "Coaches certified by the NFF and LSFA, holding FIFA certificates, leading structured daily sessions." },
+  { icon: GraduationCap, t: "Academic excellence", b: "Full Nigerian curriculum from JSS1 to SS3 with WAEC and NECO preparation, qualified teachers and small classes." },
+  { icon: ShieldCheck, t: "Coaching Team", b: "Technical, tactical, physical and mental development tracked every term, with match exposure and evaluation." },
+  { icon: HeartHandshake, t: "24/7 Welfare Team", b: "Round-the-clock pastoral care, health supervision and boarding support — our dual-team safety model." },
+];
+
+const LIFE = [
+  { icon: Home, t: "Residential life", b: "Clean, secure hostel accommodation with maximum campus security, nutritious daily meals designed for young athletes, and medical insurance coverage with routine health checks." },
+  { icon: Dumbbell, t: "Fitness & conditioning", b: "Dedicated gym and conditioning sessions build strength, stamina and agility, with personal fitness tracking and injury prevention and rehabilitation support." },
+  { icon: Users, t: "Character & leadership", b: "Character building and leadership mentoring shape disciplined young people — on the pitch, in the classroom and beyond." },
+  { icon: Globe, t: "Global pathway", b: "Professional club trials abroad, scholarships and national team selections through our strong partnerships and global network." },
 ];
 
 function About() {
@@ -30,12 +47,15 @@ function About() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <p className="animate-rise font-display uppercase tracking-[0.3em] text-gold">About the academy</p>
           <h1 className="animate-rise mt-3 max-w-3xl text-6xl font-extrabold uppercase leading-[0.9] sm:text-7xl">Discipline. Development. Destiny.</h1>
+          <p className="animate-rise mt-6 max-w-2xl text-lg opacity-85">
+            Buruj Sports Academy offers a unique and intensive residential experience that combines top-tier football training, career-building exposure, and a supportive environment for athletic and personal development. We identify and groom elite football talent, opening doors to national recognition and international football trials.
+          </p>
         </div>
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2">
         <div>
-          <SectionHeading eyebrow="Our story" title="Excellence since 2013" intro="Buruj Sports Academy was founded to give young Nigerian talent a structured, safe and ambitious route into professional football — without sacrificing education." />
+          <SectionHeading eyebrow="Our story" title="Excellence since 2013" intro="Buruj Sports Academy was founded to give young Nigerian talent a structured, safe and ambitious route into professional football — without sacrificing education. Our commitment is to nurture talent, instill discipline, and create real football opportunities." />
           <ol className="mt-10 space-y-6 border-l-2 border-gold pl-6">
             {TIMELINE.map((t, i) => (
               <Reveal key={t.year} delay={i * 100}>
@@ -74,14 +94,9 @@ function About() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
-        <SectionHeading eyebrow="How we work" title="Coaching philosophy & safety" intro="Every player is supported by two dedicated teams working side by side." />
+        <SectionHeading eyebrow="How we work" title="Coaching philosophy & safety" intro="Every player is supported by two dedicated teams working side by side — a Coaching Team for development and a 24/7 Welfare Team for care." />
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            { icon: Trophy, t: "Certified coaching", b: "Coaches certified by the NFF and LSFA, holding FIFA certificates." },
-            { icon: Users, t: "Player-first development", b: "Technical, tactical, physical and mental growth tracked every term." },
-            { icon: ShieldCheck, t: "Coaching Team", b: "Structured daily sessions, match exposure and performance evaluation." },
-            { icon: HeartHandshake, t: "24/7 Welfare Team", b: "Round-the-clock pastoral care, health and boarding supervision." },
-          ].map((f, i) => (
+          {PILLARS.map((f, i) => (
             <Reveal key={f.t} delay={i * 80}>
               <div className="glow-hover h-full rounded-xl border bg-card p-6">
                 <f.icon className="h-8 w-8 text-primary" />
@@ -90,6 +105,30 @@ function About() {
               </div>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      <section className="bg-navy py-24 text-navy-foreground">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <SectionHeading eyebrow="Beyond the pitch" title="A complete environment for growth" intro="We go beyond just sports — nurturing young talents academically, athletically and morally, setting them on a clear path to success." />
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {LIFE.map((f, i) => (
+              <Reveal key={f.t} delay={i * 80}>
+                <div className="flex h-full gap-4 rounded-xl border border-navy-foreground/15 p-6">
+                  <f.icon className="h-8 w-8 shrink-0 text-gold" />
+                  <div>
+                    <h3 className="text-2xl font-bold uppercase">{f.t}</h3>
+                    <p className="mt-2 opacity-85">{f.b}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <div className="mt-12 text-center">
+            <Button asChild size="lg" className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
+              <Link to="/admissions">Explore our programmes</Link>
+            </Button>
+          </div>
         </div>
       </section>
     </>
