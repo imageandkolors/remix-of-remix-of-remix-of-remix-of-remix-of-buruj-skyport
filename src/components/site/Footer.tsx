@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Mail, MessageCircle } from "lucide-react";
-import { Crest } from "./Crest";
+import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { SITE, waLink } from "@/lib/site";
 
 export function Footer() {
@@ -9,8 +9,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
-            <Crest className="h-14 w-12" />
-            <p className="font-display text-2xl font-extrabold uppercase">Buruj Sports Academy</p>
+            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded bg-white/95 px-3 py-2" />
           </div>
           <p className="mt-4 max-w-md text-navy-foreground/70">
             Elite football development and residential Play & Study in Ikorodu, Lagos — shaping disciplined athletes and scholars since 2013.

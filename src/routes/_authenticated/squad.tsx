@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crest } from "@/components/site/Crest";
+import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { type PlayerItemInput, addPlayerItem, deletePlayerItem, getSquadPlayer, listSquad, savePlayer } from "@/lib/squad.functions";
 
 export const Route = createFileRoute("/_authenticated/squad")({
@@ -54,7 +54,7 @@ function SquadManager() {
     <div className="min-h-screen bg-secondary">
       <header className="border-b bg-navy text-navy-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3"><Crest className="h-12 w-11" /><div><p className="font-display text-xs font-bold uppercase text-gold">Coaching staff</p><h1 className="font-display text-2xl font-extrabold uppercase">Squad manager</h1></div></div>
+          <div className="flex items-center gap-3"><img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto rounded bg-white px-2 py-1" /><div><p className="font-display text-xs font-bold uppercase text-gold">Coaching staff</p><h1 className="font-display text-2xl font-extrabold uppercase">Squad manager</h1></div></div>
           <Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><Link to="/dashboard"><ArrowLeft /> Admissions</Link></Button>
         </div>
       </header>

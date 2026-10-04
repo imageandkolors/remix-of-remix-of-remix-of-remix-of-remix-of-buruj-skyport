@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Crest } from "@/components/site/Crest";
+import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,7 +48,7 @@ function AuthPage() {
   return (
     <section className="min-h-[calc(100vh-8rem)] bg-secondary px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-md rounded-lg border bg-card p-7 shadow-lg sm:p-9">
-        <div className="flex items-center gap-3"><Crest className="h-16 w-14" /><div><p className="font-display text-sm font-bold uppercase text-primary">Staff portal</p><h1 className="text-4xl font-extrabold uppercase text-navy">Welcome back</h1></div></div>
+        <div className="flex items-center gap-3"><img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded bg-white px-2 py-1" /><div><p className="font-display text-sm font-bold uppercase text-primary">Staff portal</p><h1 className="text-4xl font-extrabold uppercase text-navy">Welcome back</h1></div></div>
         <p className="mt-5 text-muted-foreground">Sign in with your approved staff or coach account.</p>
         <form onSubmit={signIn} className="mt-7 space-y-4">
           <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
