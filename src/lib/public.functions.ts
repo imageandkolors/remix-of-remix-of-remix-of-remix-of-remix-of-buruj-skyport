@@ -38,13 +38,18 @@ export const getNews = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const getPlayers = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await publicClient()
+  const client = publicClient();
+  const { data, error } = await client
     .from("player_profiles")
     .select("slug, full_name, jersey_number, position, secondary_position, preferred_foot, date_of_birth, programme, avatar_url")
     .eq("is_published", true)
     .order("jersey_number", { ascending: true });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return Promise.all((data ?? []).map(async (player) => {
+    if (!player.avatar_url || /^https?:\/\//.test(player.avatar_url)) return player;
+    const { data: signed } = await client.storage.from("player-profile-media").createSignedUrl(player.avatar_url, 3600);
+    return { ...player, avatar_url: signed?.signedUrl ?? null };
+  }));
 });
 
 export const getPlayer = createServerFn({ method: "GET" })
@@ -62,6 +67,15 @@ export const getPlayer = createServerFn({ method: "GET" })
       c.from("player_milestones").select("id, phase, title, description, event_date").eq("player_id", p.id).order("sort"),
       c.from("player_media").select("id, kind, url, caption").eq("player_id", p.id).order("sort"),
     ]);
+    async function signedUrl(value: string | null) {
+      if (!value || /^https?:\/\//.test(value)) return value;
+      const { data: signed } = await c.storage.from("player-profile-media").createSignedUrl(value, 3600);
+      return signed?.signedUrl ?? null;
+    }
+    const resolvedMedia = await Promise.all((media.data ?? []).map(async (item) => ({ ...item, url: (await signedUrl(item.url)) ?? item.url })));
     const { id: _id, ...player } = p;
-    return { player, stats: stats.data ?? [], milestones: milestones.data ?? [], media: media.data ?? [] };
+    return {
+      player: { ...player, avatar_url: await signedUrl(player.avatar_url), video_cv_url: await signedUrl(player.video_cv_url) },
+      stats: stats.data ?? [], milestones: milestones.data ?? [], media: resolvedMedia,
+    };
   });

@@ -6,6 +6,7 @@ import { playersQuery } from "@/lib/queries";
 import { Reveal } from "@/components/site/Reveal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import teamPhoto from "@/assets/buruj-football-team.jpeg.asset.json";
 
 export const Route = createFileRoute("/players/")({
   head: () => ({
@@ -42,8 +43,6 @@ function age(dob: string | null) {
   if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--;
   return a;
 }
-const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("");
-
 function Players() {
   const { data } = useSuspenseQuery(playersQuery);
   const [pos, setPos] = useState<string>("ALL");
@@ -61,8 +60,10 @@ function Players() {
 
   return (
     <>
-      <section className="bg-navy py-24 text-navy-foreground">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <section className="relative min-h-[430px] overflow-hidden bg-navy text-navy-foreground">
+        <img src={teamPhoto.url} alt="Buruj Sports Academy players and coaching team" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-hero-fade" />
+        <div className="relative mx-auto flex min-h-[430px] max-w-7xl flex-col justify-center px-4 py-20 sm:px-6">
           <p className="animate-rise font-display uppercase tracking-[0.3em] text-gold">The squad</p>
           <h1 className="animate-rise mt-3 max-w-3xl text-6xl font-extrabold uppercase leading-[0.9] sm:text-7xl">Meet our players</h1>
           <p className="animate-rise mt-5 max-w-xl text-lg text-navy-foreground/80">Academy talent developed through certified coaching, match exposure and international trial pathways.</p>
@@ -96,12 +97,13 @@ function Players() {
             {list.map((p, i) => (
               <Reveal key={p.slug} delay={(i % 3) * 80}>
                 <Link to="/players/$slug" params={{ slug: p.slug }} className="block"><article className="glow-hover group overflow-hidden rounded-xl border bg-card">
-                  <div className="relative flex h-56 items-end justify-between bg-gradient-to-br from-navy to-primary p-5 text-navy-foreground">
+                    <div className="relative flex h-72 items-end justify-between bg-navy p-5 text-navy-foreground">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt={p.full_name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                       <img src={p.avatar_url} alt={`${p.full_name}, Buruj Sports Academy player`} className="absolute inset-0 h-full w-full object-cover object-top" loading="lazy" />
                     ) : (
-                      <span className="absolute inset-0 grid place-items-center font-display text-7xl font-extrabold text-navy-foreground/20">{initials(p.full_name)}</span>
+                       <div className="absolute inset-0 grid place-items-center bg-secondary px-8 text-center text-navy"><p className="font-display text-xl font-bold uppercase">Player photo awaiting upload</p></div>
                     )}
+                     <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-navy to-transparent" />
                     <span className="relative font-display text-6xl font-extrabold text-gold">{p.jersey_number ?? "–"}</span>
                     <span className="relative rounded-full bg-gold px-3 py-1 font-display text-sm font-bold uppercase text-gold-foreground">{p.position}</span>
                   </div>
