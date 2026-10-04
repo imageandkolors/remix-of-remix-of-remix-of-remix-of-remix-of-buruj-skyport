@@ -166,6 +166,97 @@ export type Database = {
         }
         Relationships: []
       }
+      player_compliance: {
+        Row: {
+          fifa_connect_id: string | null
+          medical_clearance_expiry: string | null
+          nff_registration_id: string | null
+          passport_expiry: string | null
+          passport_status: string
+          player_id: string
+          travel_consent_date: string | null
+          updated_at: string
+          yellow_fever_expiry: string | null
+        }
+        Insert: {
+          fifa_connect_id?: string | null
+          medical_clearance_expiry?: string | null
+          nff_registration_id?: string | null
+          passport_expiry?: string | null
+          passport_status?: string
+          player_id: string
+          travel_consent_date?: string | null
+          updated_at?: string
+          yellow_fever_expiry?: string | null
+        }
+        Update: {
+          fifa_connect_id?: string | null
+          medical_clearance_expiry?: string | null
+          nff_registration_id?: string | null
+          passport_expiry?: string | null
+          passport_status?: string
+          player_id?: string
+          travel_consent_date?: string | null
+          updated_at?: string
+          yellow_fever_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_compliance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_documents: {
+        Row: {
+          created_at: string
+          created_by: string
+          document_type: string
+          expires_on: string | null
+          id: string
+          mime_type: string
+          original_filename: string
+          player_id: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          document_type: string
+          expires_on?: string | null
+          id?: string
+          mime_type: string
+          original_filename: string
+          player_id: string
+          size_bytes: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          document_type?: string
+          expires_on?: string | null
+          id?: string
+          mime_type?: string
+          original_filename?: string
+          player_id?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_documents_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_media: {
         Row: {
           caption: string | null
@@ -337,6 +428,50 @@ export type Database = {
           weight_kg?: number | null
         }
         Relationships: []
+      }
+      player_registration_history: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          organisation: string
+          player_id: string
+          registration_body: string | null
+          registration_number: string | null
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation: string
+          player_id: string
+          registration_body?: string | null
+          registration_number?: string | null
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organisation?: string
+          player_id?: string
+          registration_body?: string | null
+          registration_number?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_registration_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_season_stats: {
         Row: {
@@ -513,6 +648,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_player: { Args: { _player: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
