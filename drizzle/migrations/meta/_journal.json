@@ -1,27 +1,5 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1790948117148,
-      "tag": "0000_create_player_profiles",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1790948258082,
-      "tag": "0001_player_profile_details",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1791077537031,
-      "tag": "0002_add_player_passport_and_secure_media",
-      "breakpoints": true
-    }
-  ]
+  "entries": []
 }
