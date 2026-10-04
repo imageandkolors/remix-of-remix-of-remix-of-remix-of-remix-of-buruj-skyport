@@ -63,6 +63,7 @@ function embed(url: string | null) {
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
   return null;
 }
+const isDirectVideo = (url: string | null) => Boolean(url && (/\.(mp4|webm|mov)(\?|$)/i.test(url) || url.includes("player-profile-media")));
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "");
 
 function Hexagon({ attrs }: { attrs: { l: string; v: number }[] }) {
@@ -211,7 +212,9 @@ function PlayerProfile() {
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 print:hidden">
         <SectionHeading eyebrow="Video CV" title="Highlights & gallery" />
-        {video ? (
+        {isDirectVideo(p.video_cv_url) ? (
+          <video src={p.video_cv_url ?? undefined} controls preload="metadata" className="mt-8 aspect-video w-full rounded-xl border bg-navy" aria-label={`${p.full_name} highlight reel`} />
+        ) : video ? (
           <div className="mt-8 aspect-video overflow-hidden rounded-xl border bg-navy">
             <iframe src={video} title={`${p.full_name} highlight reel`} className="h-full w-full" allow="accelerometer; encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />
           </div>
@@ -220,8 +223,8 @@ function PlayerProfile() {
         )}
         {videos.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((v) => (
-              <figure key={v.id}><div className="aspect-video overflow-hidden rounded-lg"><iframe src={v.e!} title={v.caption ?? "Clip"} className="h-full w-full" allowFullScreen loading="lazy" /></div>{v.caption && <figcaption className="mt-1 text-sm text-muted-foreground">{v.caption}</figcaption>}</figure>
+             {media.filter((m) => m.kind === "video").map((v) => (
+               <figure key={v.id}><div className="aspect-video overflow-hidden rounded-lg bg-navy">{embed(v.url) ? <iframe src={embed(v.url) ?? undefined} title={v.caption ?? "Clip"} className="h-full w-full" allowFullScreen loading="lazy" /> : <video src={v.url} controls preload="metadata" className="h-full w-full" />}</div>{v.caption && <figcaption className="mt-1 text-sm text-muted-foreground">{v.caption}</figcaption>}</figure>
             ))}
           </div>
         )}
