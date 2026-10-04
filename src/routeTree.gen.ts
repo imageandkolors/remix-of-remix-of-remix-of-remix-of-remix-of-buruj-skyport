@@ -18,9 +18,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProgrammesRouteImport } from './routes/_authenticated/programmes'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as PlayersSlugRouteImport } from './routes/players.$slug'
+import { Route as ProgrammesSlugRouteImport } from './routes/programmes.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -66,6 +68,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgrammesRoute = AuthenticatedProgrammesRouteImport.update({
+  id: '/programmes',
+  path: '/programmes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   id: '/squad',
   path: '/squad',
@@ -81,6 +88,11 @@ const PlayersSlugRoute = PlayersSlugRouteImport.update({
   path: '/players/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgrammesSlugRoute = ProgrammesSlugRouteImport.update({
+  id: '/programmes/$slug',
+  path: '/programmes/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -91,8 +103,10 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/programmes': typeof AuthenticatedProgrammesRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
+  '/programmes/$slug': typeof ProgrammesSlugRoute
   '/players/': typeof PlayersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -104,8 +118,10 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/programmes': typeof AuthenticatedProgrammesRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
+  '/programmes/$slug': typeof ProgrammesSlugRoute
   '/players': typeof PlayersIndexRoute
 }
 export interface FileRoutesById {
@@ -119,8 +135,10 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/programmes': typeof AuthenticatedProgrammesRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
+  '/programmes/$slug': typeof ProgrammesSlugRoute
   '/players/': typeof PlayersIndexRoute
 }
 export interface FileRouteTypes {
@@ -134,8 +152,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/dashboard'
+    | '/programmes'
     | '/squad'
     | '/players/$slug'
+    | '/programmes/$slug'
     | '/players/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,8 +167,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/dashboard'
+    | '/programmes'
     | '/squad'
     | '/players/$slug'
+    | '/programmes/$slug'
     | '/players'
   id:
     | '__root__'
@@ -161,8 +183,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/_authenticated/dashboard'
+    | '/_authenticated/programmes'
     | '/_authenticated/squad'
     | '/players/$slug'
+    | '/programmes/$slug'
     | '/players/'
   fileRoutesById: FileRoutesById
 }
@@ -176,6 +200,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
   PlayersSlugRoute: typeof PlayersSlugRoute
+  ProgrammesSlugRoute: typeof ProgrammesSlugRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
 }
 
@@ -244,6 +269,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/programmes': {
+      id: '/_authenticated/programmes'
+      path: '/programmes'
+      fullPath: '/programmes'
+      preLoaderRoute: typeof AuthenticatedProgrammesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/squad': {
       id: '/_authenticated/squad'
       path: '/squad'
@@ -265,16 +297,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayersSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/programmes/$slug': {
+      id: '/programmes/$slug'
+      path: '/programmes/$slug'
+      fullPath: '/programmes/$slug'
+      preLoaderRoute: typeof ProgrammesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProgrammesRoute: typeof AuthenticatedProgrammesRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProgrammesRoute: AuthenticatedProgrammesRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }
 
@@ -291,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
   PlayersSlugRoute: PlayersSlugRoute,
+  ProgrammesSlugRoute: ProgrammesSlugRoute,
   PlayersIndexRoute: PlayersIndexRoute,
 }
 export const routeTree = rootRouteImport
