@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, GraduationCap, Tent } from "lucide-react";
+import { Check, GraduationCap, Tent, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal, SectionHeading } from "./Reveal";
 import { FEE_PLACEHOLDER } from "@/lib/site";
@@ -27,6 +27,16 @@ const EXTRA: Record<string, { icon: typeof Check; tagline: string; pathway: stri
     tagline: "Intensive residential football for dedicated players.",
     pathway: ["Trial match registration", "Residential camp training", "Performance evaluation", "International trial showcase"],
   },
+  "football-education": {
+    icon: GraduationCap,
+    tagline: "Full secondary schooling with elite residential football.",
+    pathway: ["Assessment & admission", "Term-time academics + training", "Squad selection & league matches", "International trial showcase"],
+  },
+  "football-development": {
+    icon: Trophy,
+    tagline: "Full-season development, competition and scouting exposure.",
+    pathway: ["Enrollment & assessment", "Season-long development & tournaments", "Scout showcase events", "NLO pathway recommendation"],
+  },
 };
 
 export function formatFee(p: Programme) {
@@ -39,7 +49,7 @@ export function Programmes({ programmes }: { programmes: Programme[] }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <SectionHeading eyebrow="Programmes" title="Choose your game plan" intro="Two residential pathways — both leading to our international trial showcase." />
+        <SectionHeading eyebrow="Programmes" title="Choose your game plan" intro="Three residential pathways — all leading to our international trial showcase." />
         <div className="inline-flex rounded-full bg-secondary p-1">
           {(["inclusions", "pathway"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={cn("rounded-full px-5 py-2 font-display font-bold uppercase tracking-wide transition-colors", tab === t ? "bg-navy text-navy-foreground" : "text-navy hover:text-primary")}>
@@ -48,7 +58,7 @@ export function Programmes({ programmes }: { programmes: Programme[] }) {
           ))}
         </div>
       </div>
-      <div className="mt-12 grid gap-8 md:grid-cols-2">
+      <div className="mt-12 grid gap-8 md:grid-cols-3">
         {programmes.map((p, idx) => {
           const x = EXTRA[p.slug];
           const Icon = x?.icon ?? Check;
@@ -80,7 +90,7 @@ export function Programmes({ programmes }: { programmes: Programme[] }) {
                   )}
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-4 border-t pt-6 mt-8">
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Annual fee</p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Fees</p>
                       <p className="font-display text-xl font-bold text-navy">{formatFee(p)}</p>
                     </div>
                     <Button asChild className="font-display font-bold uppercase">
