@@ -6,7 +6,7 @@ import { playersQuery } from "@/lib/queries";
 import { Reveal } from "@/components/site/Reveal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import teamPhoto from "@/assets/buruj-football-team.jpeg.asset.json";
+import teamPhoto from "@/assets/hero-campus.jpg";
 
 export const Route = createFileRoute("/players/")({
   head: () => ({
@@ -61,7 +61,7 @@ function Players() {
   return (
     <>
       <section className="relative min-h-[430px] overflow-hidden bg-navy text-navy-foreground">
-        <img src={teamPhoto.url} alt="Buruj Sports Academy players and coaching team" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={teamPhoto} alt="Buruj Sports Academy players and coaching team" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-hero-fade" />
         <div className="relative mx-auto flex min-h-[430px] max-w-7xl flex-col justify-center px-4 py-20 sm:px-6">
           <p className="animate-rise font-display uppercase tracking-[0.3em] text-gold">The squad</p>

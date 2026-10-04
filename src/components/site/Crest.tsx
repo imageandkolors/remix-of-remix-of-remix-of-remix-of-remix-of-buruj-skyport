@@ -1,5 +1,10 @@
-import logo from "@/assets/buruj-logo.jpeg.asset.json";
-
 export function Crest({ className = "h-10 w-10" }: { className?: string }) {
-  return <img src={logo.url} alt="Buruj Sports Academy crest" className={`${className} rounded-sm object-contain`} />;
+  return (
+    <div
+      className={`${className} flex shrink-0 items-center justify-center rounded-sm bg-navy font-display text-[11px] font-black tracking-tight text-gold ring-1 ring-gold/40`}
+      aria-label="Buruj Sports Academy crest"
+    >
+      BSA
+    </div>
+  );
 }

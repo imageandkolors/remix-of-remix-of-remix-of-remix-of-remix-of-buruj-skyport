@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import footballTeam from "@/assets/buruj-football-team.jpeg.asset.json";
-import students from "@/assets/buruj-students.jpeg.asset.json";
+import footballTeam from "@/assets/hero-training.jpg";
+import students from "@/assets/hero-study.jpg";
 import trials from "@/assets/hero-trials.jpg";
 import campus from "@/assets/hero-campus.jpg";
 
 const SLIDES = [
-  { img: footballTeam.url, eyebrow: "Elite football development", title: "Built for the next level", body: "NFF & LSFA certified coaches, structured daily sessions and a proven player pathway." },
-  { img: students.url, eyebrow: "Residential Play & Study", title: "Train hard. Learn harder.", body: "Full JSS 1 – SS 3 schooling alongside professional-grade training, with 24/7 welfare care." },
+  { img: footballTeam, eyebrow: "Elite football development", title: "Built for the next level", body: "NFF & LSFA certified coaches, structured daily sessions and a proven player pathway." },
+  { img: students, eyebrow: "Residential Play & Study", title: "Train hard. Learn harder.", body: "Full JSS 1 – SS 3 schooling alongside professional-grade training, with 24/7 welfare care." },
   { img: trials, eyebrow: "International trials", title: "UK · Spain · Italy", body: "Showcase opportunities that put Buruj players in front of European clubs and scouts." },
   { img: campus, eyebrow: "The Ikorodu campus", title: "Home of Buruj", body: "Pitch, boarding and classrooms together in Ogolonto, Ikorodu, Lagos." },
 ];

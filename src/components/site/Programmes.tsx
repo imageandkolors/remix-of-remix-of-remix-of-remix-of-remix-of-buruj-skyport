@@ -90,7 +90,7 @@ export function Programmes({ programmes }: { programmes: Programme[] }) {
                   )}
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-4 border-t pt-6 mt-8">
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Annual fee</p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Fees</p>
                       <p className="font-display text-xl font-bold text-navy">{formatFee(p)}</p>
                     </div>
                     <Button asChild className="font-display font-bold uppercase">
