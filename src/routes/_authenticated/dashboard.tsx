@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { getStaffDashboard, updateApplicationReview } from "@/lib/staff.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessRequestsPanel, ApplicationInsights, CvRequestsPanel } from "@/components/staff/StaffPanels";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -104,7 +105,7 @@ function Dashboard() {
       <header className="border-b bg-navy text-navy-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3"><img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto rounded bg-white px-2 py-1" /><div><p className="font-display text-xs font-bold uppercase text-gold">Admissions</p><h1 className="font-display text-2xl font-extrabold uppercase">Staff dashboard</h1></div></div>
-          <div className="flex items-center gap-3"><Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge><Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/squad">Squad manager</Link></Button><Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><Link to="/programmes">Programmes</Link></Button><Button variant="outline" onClick={signOut} className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><LogOut /> Sign out</Button></div>
+          <div className="flex items-center gap-3"><Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge><Button asChild className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/squad">Squad manager</Link></Button><Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><Link to="/programmes">Programmes</Link></Button>{(query.data.role === "admin" || query.data.role === "owner") && <Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><Link to="/settings">Settings</Link></Button>}<Button variant="outline" onClick={signOut} className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground"><LogOut /> Sign out</Button></div>
         </div>
       </header>
 
@@ -129,6 +130,8 @@ function Dashboard() {
           </Table>
           {filtered.length === 0 && <p className="p-10 text-center text-muted-foreground">No applications match this view.</p>}
         </section>
+        {canManage && <AccessRequestsPanel />}
+        <CvRequestsPanel />
       </main>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
@@ -138,6 +141,7 @@ function Dashboard() {
               <div><h3 className="font-display text-lg font-bold uppercase text-primary">Player & guardian</h3><Detail label="Date of birth" value={selected.date_of_birth} /><Detail label="Position" value={selected.position} /><Detail label="School" value={[selected.current_school, selected.current_class].filter(Boolean).join(" · ")} /><Detail label="Guardian" value={selected.guardian_name} /><Detail label="Phone" value={selected.guardian_phone} /><Detail label="Email" value={selected.guardian_email} /></div>
               <div><h3 className="font-display text-lg font-bold uppercase text-primary">Application</h3><Detail label="Motivation" value={selected.motivation} /><Detail label="Medical notes" value={selected.medical_notes} /><Detail label="Address" value={selected.address} /></div>
             </div>
+            <ApplicationInsights key={selected.id} applicationId={selected.id} saved={selected.ai_assessment} savedAt={selected.ai_assessed_at} />
             <div className="grid gap-4 border-t pt-5 md:grid-cols-2">
               <div className="space-y-1.5"><Label>Status</Label><Select value={status} onValueChange={setStatus} disabled={!canManage}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Assigned reviewer</Label><Select value={reviewerId} onValueChange={setReviewerId} disabled={!canManage}><SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{query.data.reviewers.map((reviewer) => <SelectItem key={reviewer.id} value={reviewer.id}>{reviewer.full_name ?? "Unnamed staff member"} · {reviewer.role}</SelectItem>)}</SelectContent></Select></div>
