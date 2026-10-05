@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, FileDown, MessageCircle, PlayCircle } from "lucide-react";
+import { ArrowLeft, BadgeCheck, FileText, MessageCircle, PlayCircle } from "lucide-react";
+import { RequestCvDialog } from "@/components/site/RequestCvDialog";
 import { playerQuery } from "@/lib/queries";
-import { waLink } from "@/lib/site";
+import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,8 @@ function PlayerProfile() {
   const { slug } = Route.useParams();
   const { data } = useSuspenseQuery(playerQuery(slug));
   const [phase, setPhase] = useState<"before" | "now" | "future">("now");
+  const settings = useSiteSettings();
+  const [cvOpen, setCvOpen] = useState(false);
   if (!data) return <PlayerNotFound />;
   const { player: p, stats, milestones, media } = data;
 
@@ -107,10 +110,10 @@ function PlayerProfile() {
   );
   const video = embed(p.video_cv_url);
   const photos = media.filter((m) => m.kind === "photo");
-  const videos = media.filter((m) => m.kind === "video").map((m) => ({ ...m, e: embed(m.url) })).filter((m) => m.e);
+  const videos = media.filter((m) => m.kind === "video");
   const initials = p.full_name.split(" ").map((x) => x[0]).slice(0, 2).join("");
   const vitals = [
-    ["Age", age(p.date_of_birth) ?? "–"], ["Nationality", p.nationality ?? "–"], ["Foot", p.preferred_foot ?? "–"],
+    ["Age", p.age != null ? `${p.age}${p.birth_year ? ` · ${p.birth_year}` : ""}` : "–"], ["Nationality", p.nationality ?? "–"], ["Foot", p.preferred_foot ?? "–"],
     ["Height", p.height_cm ? `${p.height_cm} cm` : "–"], ["Weight", p.weight_kg ? `${p.weight_kg} kg` : "–"],
     ["Programme", p.programme ?? "–"], ["Joined", fmtDate(p.joined_on) || "–"], ["Alt. position", p.secondary_position ?? "–"],
   ];
@@ -131,6 +134,7 @@ function PlayerProfile() {
             <div className="animate-rise">
               <p className="font-display uppercase tracking-[0.3em] text-gold">#{p.jersey_number ?? "–"} · {POS_LABEL[p.position] ?? p.position}</p>
               <h1 className="mt-2 text-5xl font-extrabold uppercase leading-[0.9] sm:text-7xl">{p.full_name}</h1>
+              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-gold"><BadgeCheck className="h-4 w-4" /> Buruj Technical Staff Verified — {fmtDate(p.updated_at)}</p>
               {p.bio && <p className="mt-4 max-w-xl text-lg text-navy-foreground/80">{p.bio}</p>}
               <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
                 {vitals.map(([k, v]) => (
@@ -138,9 +142,9 @@ function PlayerProfile() {
                 ))}
               </dl>
               <div className="mt-6 flex flex-wrap gap-3 print:hidden">
-                <Button onClick={() => window.print()} className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><FileDown className="mr-1 h-4 w-4" /> Download CV (PDF)</Button>
+                <Button onClick={() => setCvOpen(true)} className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><FileText className="mr-1 h-4 w-4" /> Request CV</Button>
                 <Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent font-display font-bold uppercase text-navy-foreground hover:bg-navy-foreground/10">
-                  <a href={waLink(`Hello Buruj Sports Academy, I'm enquiring about player ${p.full_name} (#${p.jersey_number ?? ""}).`)} target="_blank" rel="noreferrer"><MessageCircle className="mr-1 h-4 w-4" /> Enquire via academy</a>
+                  <a href={waLinkFor(settings.whatsapp, `Hello Buruj Sports Academy, I'm enquiring about player ${p.full_name} (#${p.jersey_number ?? ""}).`)} target="_blank" rel="noreferrer"><MessageCircle className="mr-1 h-4 w-4" /> Enquire via academy</a>
                 </Button>
               </div>
             </div>
@@ -246,6 +250,7 @@ function PlayerProfile() {
           </div>
         </section>
       )}
+      <RequestCvDialog open={cvOpen} onOpenChange={setCvOpen} slug={slug} playerName={p.full_name} />
     </>
   );
 }

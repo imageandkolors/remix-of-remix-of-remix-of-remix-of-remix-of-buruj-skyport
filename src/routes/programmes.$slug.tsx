@@ -84,7 +84,7 @@ function ProgrammePage() {
           <div className="rounded-xl bg-navy p-6 text-navy-foreground">
             <h3 className="text-2xl font-extrabold uppercase">{p.cta_title ?? "Ready to join?"}</h3>
             {p.cta_body && <p className="mt-2 opacity-85">{p.cta_body}</p>}
-            <Button asChild className="mt-4 w-full bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/apply">{p.cta_label ?? "Apply now"}</Link></Button>
+            <Button asChild className="mt-4 w-full bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><Link to="/apply" search={{ programme: p.name }}>{p.cta_label ?? "Apply now"}</Link></Button>
           </div>
         </aside>
       </div>

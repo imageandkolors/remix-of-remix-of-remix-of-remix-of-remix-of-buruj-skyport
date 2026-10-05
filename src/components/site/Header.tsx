@@ -4,6 +4,7 @@ import { useState } from "react";
 import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { useTrialSheet } from "./TrialForm";
+import { useSiteSettings } from "@/lib/use-site-settings";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -12,13 +13,15 @@ const NAV = [
   { to: "/admissions", label: "Admissions" },
   { to: "/gallery", label: "Media" },
   { to: "/contact", label: "Contact" },
+  { to: "/portal", label: "Parents" },
 ] as const;
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const { open: openTrial } = useTrialSheet();
+  const s = useSiteSettings();
   return (
-    <header className="sticky top-0 z-50 border-b border-navy-foreground/10 bg-navy/95 text-navy-foreground backdrop-blur">
+    <header style={{ backgroundColor: s.header_bg, color: s.header_fg }} className="sticky top-0 z-50 border-b border-current/10 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2">
           <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto shrink-0 rounded bg-white/95 px-2 py-1" />
@@ -29,7 +32,7 @@ export function Header() {
               key={n.to}
               to={n.to}
               activeOptions={{ exact: n.to === "/" }}
-              className="font-display text-base font-semibold uppercase tracking-wider text-navy-foreground/80 transition-colors hover:text-gold"
+              className="font-display text-base font-semibold uppercase tracking-wider opacity-85 transition-colors hover:text-gold"
               activeProps={{ className: "text-gold" }}
             >
               {n.label}
@@ -44,7 +47,7 @@ export function Header() {
         </button>
       </div>
       {open && (
-        <nav className="flex flex-col gap-1 border-t border-navy-foreground/10 px-4 pb-4 md:hidden">
+        <nav className="flex flex-col gap-1 border-t border-current/10 px-4 pb-4 md:hidden">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="py-2 font-display text-lg font-semibold uppercase">
               {n.label}

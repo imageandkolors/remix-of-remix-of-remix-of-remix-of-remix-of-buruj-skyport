@@ -17,8 +17,10 @@ import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProgrammesRouteImport } from './routes/_authenticated/programmes'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as PlayersSlugRouteImport } from './routes/players.$slug'
@@ -63,6 +65,11 @@ const GalleryRoute = GalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -71,6 +78,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedProgrammesRoute = AuthenticatedProgrammesRouteImport.update({
   id: '/programmes',
   path: '/programmes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
@@ -102,8 +114,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/programmes': typeof AuthenticatedProgrammesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -117,8 +131,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/portal': typeof PortalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/programmes': typeof AuthenticatedProgrammesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -134,8 +150,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/portal': typeof PortalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/programmes': typeof AuthenticatedProgrammesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -151,8 +169,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
+    | '/portal'
     | '/dashboard'
     | '/programmes'
+    | '/settings'
     | '/squad'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -166,8 +186,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
+    | '/portal'
     | '/dashboard'
     | '/programmes'
+    | '/settings'
     | '/squad'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -182,8 +204,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/gallery'
+    | '/portal'
     | '/_authenticated/dashboard'
     | '/_authenticated/programmes'
+    | '/_authenticated/settings'
     | '/_authenticated/squad'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -199,6 +223,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
+  PortalRoute: typeof PortalRoute
   PlayersSlugRoute: typeof PlayersSlugRoute
   ProgrammesSlugRoute: typeof ProgrammesSlugRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
@@ -262,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -274,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/programmes'
       fullPath: '/programmes'
       preLoaderRoute: typeof AuthenticatedProgrammesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/squad': {
@@ -310,12 +349,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProgrammesRoute: typeof AuthenticatedProgrammesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProgrammesRoute: AuthenticatedProgrammesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }
 
@@ -331,6 +372,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
+  PortalRoute: PortalRoute,
   PlayersSlugRoute: PlayersSlugRoute,
   ProgrammesSlugRoute: ProgrammesSlugRoute,
   PlayersIndexRoute: PlayersIndexRoute,

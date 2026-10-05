@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Check, ArrowLeft, ArrowRight, ClipboardCheck, Clock3, PhoneCall } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { programmesQuery } from "@/lib/queries";
+import { submitApplication } from "@/lib/applications.functions";
+import { DocumentUploader } from "@/components/site/DocumentUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/apply")({
+  validateSearch: (s: Record<string, unknown>): { programme?: string } => (typeof s["programme"] === "string" ? { programme: s["programme"].slice(0, 120) } : {}),
   head: () => ({
     meta: [
       { title: "Apply Online — Buruj Sports Academy" },
-      { name: "description", content: "Complete the Buruj Sports Academy online application for Play & Study or Football Camping in a few simple steps." },
+      { name: "description", content: "Complete the Buruj Sports Academy online application for Football & Education, Football Development or Football Camping in a few simple steps, and save to continue later." },
       { property: "og:title", content: "Apply Online — Buruj Sports Academy" },
-      { property: "og:description", content: "Multi-step online application for Play & Study and Football Camping." },
+      { property: "og:description", content: "Multi-step online application with save-and-continue and document uploads." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -28,7 +32,7 @@ type Data = Record<string, string>;
 const STEPS = ["Programme", "Player", "Guardian", "Health & goals", "Review"] as const;
 
 const stepSchemas = [
-  z.object({ programme: z.enum(["Play & Study", "Football Camping"], { message: "Choose a programme" }) }),
+  z.object({ programme: z.string().min(2, "Choose a programme") }),
   z.object({
     player_name: z.string().trim().min(2, "Enter the player's full name").max(120),
     date_of_birth: z.string().min(1, "Enter date of birth"),
@@ -50,13 +54,40 @@ const stepSchemas = [
   }),
 ];
 
+const DRAFT_KEY = "buruj-apply-draft-v1";
+
 function Apply() {
+  const search = Route.useSearch();
+  const programmes = useQuery(programmesQuery);
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<Data>({ programme: "", gender: "" });
+  const [data, setData] = useState<Data>({ programme: search.programme ?? "", gender: "" });
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [reference, setReference] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<{ id: string; reference_number: string } | null>(null);
+  const [draftFound, setDraftFound] = useState<{ data: Data; step: number; saved: string } | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const reference = submitted?.reference_number ?? null;
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setData({ ...data, [k]: e.target.value });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) setDraftFound(JSON.parse(raw));
+    } catch { /* ignore */ }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || submitted || draftFound) return;
+    const filled = Object.entries(data).some(([k, v]) => k !== "programme" && k !== "gender" && v);
+    if (!filled) return;
+    const t = setTimeout(() => localStorage.setItem(DRAFT_KEY, JSON.stringify({ data, step, saved: new Date().toISOString() })), 400);
+    return () => clearTimeout(t);
+  }, [data, step, hydrated, submitted, draftFound]);
+
+  function resume() { if (draftFound) { setData({ ...draftFound.data, ...(search.programme ? { programme: search.programme } : {}) }); setStep(draftFound.step); } setDraftFound(null); toast.success("Saved application restored"); }
+  function discard() { localStorage.removeItem(DRAFT_KEY); setDraftFound(null); }
+  function saveForLater() { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data, step, saved: new Date().toISOString() })); toast.success("Saved on this device — come back any time to continue"); }
 
   function next() {
     const r = stepSchemas[step]!.safeParse(data);
@@ -67,23 +98,19 @@ function Apply() {
   async function submit() {
     if (!consent) { toast.error("Please confirm guardian consent"); return; }
     setLoading(true);
-    const { data: u } = await supabase.auth.getUser();
     const n = (k: string) => data[k]?.trim() || null;
-    const { data: submitted, error } = await supabase.from("applications").insert({
-      user_id: u.user?.id ?? null,
-      programme: data["programme"]!,
-      player_name: data["player_name"]!.trim(),
-      date_of_birth: n("date_of_birth"),
-      gender: n("gender"), position: n("position"),
-      current_school: n("current_school"), current_class: n("current_class"),
-      guardian_name: data["guardian_name"]!.trim(), guardian_relationship: n("guardian_relationship"),
-      guardian_phone: data["guardian_phone"]!.trim(), guardian_email: n("guardian_email"),
-      address: n("address"), medical_notes: n("medical_notes"), motivation: n("motivation"),
-      consent: true,
-    }).select("reference_number").single();
-    setLoading(false);
-    if (error) { toast.error("Could not submit your application. Please try again."); return; }
-    setReference(submitted.reference_number);
+    try {
+      const row = await submitApplication({ data: {
+        programme: data["programme"]!, player_name: data["player_name"]!.trim(), date_of_birth: n("date_of_birth"),
+        gender: n("gender"), position: n("position"), current_school: n("current_school"), current_class: n("current_class"),
+        guardian_name: data["guardian_name"]!.trim(), guardian_relationship: n("guardian_relationship"),
+        guardian_phone: data["guardian_phone"]!.trim(), guardian_email: n("guardian_email"),
+        address: n("address"), medical_notes: n("medical_notes"), motivation: n("motivation"), consent: true,
+      } });
+      localStorage.removeItem(DRAFT_KEY);
+      setSubmitted(row);
+    } catch { toast.error("Could not submit your application. Please try again."); }
+    finally { setLoading(false); }
   }
 
   return (
@@ -105,10 +132,23 @@ function Apply() {
               <NextStep icon={PhoneCall} title="Contact" text={`We will contact ${data["guardian_name"]} using ${data["guardian_phone"]}.`} />
               <NextStep icon={Clock3} title="Decision" text="Shortlisted players receive trial or enrolment instructions." />
             </div>
-            <div className="mt-8 flex justify-center"><Button asChild className="font-display font-bold uppercase"><Link to="/">Back to home</Link></Button></div>
+            {submitted && (
+              <div className="mt-8 rounded-md border p-5">
+                <p className="font-display text-lg font-bold uppercase text-navy">Upload documents now</p>
+                <p className="mb-3 text-sm text-muted-foreground">Birth certificate, passport photograph and medical report{/education/i.test(data["programme"] ?? "") ? ", plus the latest school report" : ""}. Take a photo or choose a file from your phone or computer. You can also upload later from the Parent portal.</p>
+                <DocumentUploader applicationId={submitted.id} reference={submitted.reference_number} />
+              </div>
+            )}
+            <div className="mt-8 flex flex-wrap justify-center gap-3"><Button asChild variant="outline" className="font-display font-bold uppercase"><Link to="/portal">Parent portal</Link></Button><Button asChild className="font-display font-bold uppercase"><Link to="/">Back to home</Link></Button></div>
           </div>
         ) : (
           <>
+            {draftFound && (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-gold bg-card p-4 shadow">
+                <p className="text-sm"><b>You have a saved application</b>{draftFound.data["player_name"] ? ` for ${draftFound.data["player_name"]}` : ""} from {new Date(draftFound.saved).toLocaleString()}.</p>
+                <div className="flex gap-2"><Button size="sm" onClick={resume}>Continue where I left off</Button><Button size="sm" variant="outline" onClick={discard}>Start fresh</Button></div>
+              </div>
+            )}
             <ol className="mb-8 grid grid-cols-5 gap-2">
               {STEPS.map((s, i) => (
                 <li key={s} className="text-center">
@@ -123,10 +163,7 @@ function Apply() {
 
               {step === 0 && (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {[
-                    { v: "Play & Study", b: "Residential schooling JSS 1 – SS 3 with daily elite training." },
-                    { v: "Football Camping", b: "Intensive residential football programme, ages 9 – 22." },
-                  ].map((p) => (
+                  {(programmes.data ?? []).map((pr) => ({ v: pr.name, b: [pr.age_range, pr.tagline].filter(Boolean).join(" · ") })).map((p) => (
                     <button type="button" key={p.v} onClick={() => setData({ ...data, programme: p.v })}
                       className={cn("rounded-lg border-2 p-5 text-left transition-all", data["programme"] === p.v ? "border-gold bg-gold/10" : "border-border hover:border-primary")}>
                       <span className="font-display text-2xl font-bold uppercase text-navy">{p.v}</span>
@@ -180,7 +217,7 @@ function Apply() {
               )}
 
               <div className="mt-8 flex justify-between gap-3">
-                <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="font-display uppercase"><ArrowLeft className="h-4 w-4" /> Back</Button>
+                <div className="flex gap-2"><Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="font-display uppercase"><ArrowLeft className="h-4 w-4" /> Back</Button><Button variant="ghost" onClick={saveForLater} className="font-display uppercase">Save & continue later</Button></div>
                 {step < STEPS.length - 1 ? (
                   <Button onClick={next} className="font-display font-bold uppercase">Continue <ArrowRight className="h-4 w-4" /></Button>
                 ) : (

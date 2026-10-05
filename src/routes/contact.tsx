@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SITE, waLink } from "@/lib/site";
+import { SITE } from "@/lib/site";
+import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/contact")({
       { name: "description", content: "Visit Buruj Sports Academy at 8, Adeniran Oshodi Street, Ogolonto, Ikorodu, Lagos. Chat on WhatsApp or send an enquiry." },
       { property: "og:title", content: "Contact Buruj Sports Academy" },
       { property: "og:description", content: "Campus address, WhatsApp and enquiry form." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Contact,
@@ -32,6 +35,7 @@ const schema = z.object({
 });
 
 function Contact() {
+  const s = useSiteSettings();
   const [loading, setLoading] = useState(false);
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,8 +56,8 @@ function Contact() {
         <SectionHeading eyebrow="Contact & campus" title="Come and see Buruj" intro="Visit the campus, chat with us on WhatsApp, or send an enquiry — no account needed." />
         <div className="mt-8 space-y-4">
           <div className="flex gap-4 rounded-xl border bg-card p-5"><MapPin className="h-6 w-6 shrink-0 text-primary" /><div><p className="font-display text-lg font-bold uppercase text-navy">Campus</p><p className="text-muted-foreground">{SITE.address}</p></div></div>
-          <a href={waLink()} target="_blank" rel="noreferrer" className="glow-hover flex gap-4 rounded-xl border bg-card p-5"><MessageCircle className="h-6 w-6 shrink-0 text-primary" /><div><p className="font-display text-lg font-bold uppercase text-navy">WhatsApp</p><p className="text-muted-foreground">Chat with admissions directly</p></div></a>
-          <a href={`mailto:${SITE.email}`} className="glow-hover flex gap-4 rounded-xl border bg-card p-5"><Mail className="h-6 w-6 shrink-0 text-primary" /><div><p className="font-display text-lg font-bold uppercase text-navy">Email</p><p className="text-muted-foreground">{SITE.email}</p></div></a>
+          <a href={waLinkFor(s.whatsapp)} target="_blank" rel="noreferrer" className="glow-hover flex gap-4 rounded-xl border bg-card p-5"><MessageCircle className="h-6 w-6 shrink-0 text-primary" /><div><p className="font-display text-lg font-bold uppercase text-navy">WhatsApp</p><p className="text-muted-foreground">Chat with admissions directly</p></div></a>
+          <a href={`mailto:${s.email}`} className="glow-hover flex gap-4 rounded-xl border bg-card p-5"><Mail className="h-6 w-6 shrink-0 text-primary" /><div><p className="font-display text-lg font-bold uppercase text-navy">Email</p><p className="text-muted-foreground">{s.email}</p></div></a>
         </div>
         <iframe
           title="Buruj campus map"
@@ -72,7 +76,7 @@ function Contact() {
             <div className="space-y-1.5">
               <Label htmlFor="programme">Interested in</Label>
               <select id="programme" name="programme" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                <option>Play & Study</option><option>Football Camping</option><option>Trials</option><option>General</option>
+                <option>Football & Education</option><option>Football Development</option><option>Football Camping</option><option>Trials</option><option>General</option>
               </select>
             </div>
             <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="message">Message *</Label><Textarea id="message" name="message" rows={5} required /></div>
