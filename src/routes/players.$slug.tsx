@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, FileDown, MessageCircle, PlayCircle } from "lucide-react";
 import { playerQuery } from "@/lib/queries";
-import { waLink } from "@/lib/site";
+import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -140,7 +140,7 @@ function PlayerProfile() {
               <div className="mt-6 flex flex-wrap gap-3 print:hidden">
                 <Button onClick={() => window.print()} className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90"><FileDown className="mr-1 h-4 w-4" /> Download CV (PDF)</Button>
                 <Button asChild variant="outline" className="border-navy-foreground/30 bg-transparent font-display font-bold uppercase text-navy-foreground hover:bg-navy-foreground/10">
-                  <a href={waLink(`Hello Buruj Sports Academy, I'm enquiring about player ${p.full_name} (#${p.jersey_number ?? ""}).`)} target="_blank" rel="noreferrer"><MessageCircle className="mr-1 h-4 w-4" /> Enquire via academy</a>
+                  <a href={waLinkFor(settings.whatsapp, `Hello Buruj Sports Academy, I'm enquiring about player ${p.full_name} (#${p.jersey_number ?? ""}).`)} target="_blank" rel="noreferrer"><MessageCircle className="mr-1 h-4 w-4" /> Enquire via academy</a>
                 </Button>
               </div>
             </div>
