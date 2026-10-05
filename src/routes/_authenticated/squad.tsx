@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlayerFilePicker } from "@/components/staff/PlayerFilePicker";
 import logoAsset from "@/assets/buruj-logo.png.asset.json";
 import { type PlayerItemInput, addPlayerItem, deletePlayerItem, getSquadPlayer, listSquad, savePlayer } from "@/lib/squad.functions";
 
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/squad")({
 });
 
 type Form = Record<string, string | boolean>;
-const EMPTY: Form = { full_name: "", slug: "", jersey_number: "", position: "MID", secondary_position: "", preferred_foot: "", date_of_birth: "", joined_on: "", height_cm: "", weight_kg: "", nationality: "Nigerian", programme: "", avatar_url: "", video_cv_url: "", bio: "", cv_summary: "", overall_rating: "", pace: "", technical: "", tactical: "", physical: "", passing: "", finishing: "", is_published: false };
+const EMPTY: Form = { full_name: "", slug: "", jersey_number: "", position: "MID", secondary_position: "", preferred_foot: "", date_of_birth: "", joined_on: "", height_cm: "", weight_kg: "", nationality: "Nigerian", programme: "",  bio: "", cv_summary: "", overall_rating: "", pace: "", technical: "", tactical: "", physical: "", passing: "", finishing: "", is_published: false };
 const NUMS = ["jersey_number", "height_cm", "weight_kg", "overall_rating", "pace", "technical", "tactical", "physical", "passing", "finishing"];
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const sel = "h-10 w-full rounded-md border bg-background px-3 text-sm";
@@ -143,8 +144,11 @@ function Editor({ id, onSaved }: { id: string | null; onSaved: (id: string) => v
         <div className="space-y-1"><Label>Preferred foot</Label><select className={sel} value={String(f["preferred_foot"])} onChange={set("preferred_foot")}><option value="">—</option>{["Left", "Right", "Both"].map((p) => <option key={p}>{p}</option>)}</select></div>
         {field("date_of_birth", "Date of birth", "date")}{field("joined_on", "Joined academy", "date")}{field("nationality", "Nationality")}
         {field("height_cm", "Height (cm)", "number")}{field("weight_kg", "Weight (kg)", "number")}
-        <div className="space-y-1"><Label>Programme</Label><select className={sel} value={String(f["programme"])} onChange={set("programme")}><option value="">—</option><option>Play & Study</option><option>Football Camping</option></select></div>
-        {field("avatar_url", "Photo link (URL)")}{field("video_cv_url", "Highlight reel (YouTube/Vimeo)")}
+        <div className="space-y-1"><Label>Programme</Label><select className={sel} value={String(f["programme"])} onChange={set("programme")}><option value="">—</option><option>Football & Education</option><option>Football Development</option><option>Football Camping</option></select></div>
+        {id ? <div className="space-y-2 sm:col-span-3"><Label>Profile photo & highlight video (from this device)</Label><div className="flex flex-wrap gap-3">
+          <PlayerFilePicker playerId={id} purpose="avatar" label="Upload photo" accept="image/*" hasFile={Boolean((detail.data?.player as Record<string, unknown> | undefined)?.["avatar_url"])} onDone={() => { qc.invalidateQueries({ queryKey: ["squad-player", id] }); qc.invalidateQueries({ queryKey: ["players"] }); }} />
+          <PlayerFilePicker playerId={id} purpose="video" label="Upload highlight video" accept="video/mp4,video/quicktime,video/webm" hasFile={Boolean((detail.data?.player as Record<string, unknown> | undefined)?.["video_cv_url"])} onDone={() => qc.invalidateQueries({ queryKey: ["squad-player", id] })} />
+        </div></div> : <p className="text-sm text-muted-foreground sm:col-span-3">Save the player first, then upload a photo and highlight video from your device.</p>}
       </div>
       <h3 className="font-display text-lg font-bold uppercase text-primary">Ratings (0–99)</h3>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-7">
@@ -208,8 +212,7 @@ function Extras({ id, data }: { id: string; data: Detail }) {
         <h3 className="font-display text-lg font-bold uppercase text-primary">Photos & video clips</h3>
         {data.media.map((m) => <div key={m.id} className="flex items-center justify-between border-b py-1 text-sm"><span className="truncate"><Badge variant="secondary" className="mr-2 uppercase">{m.kind}</Badge>{m.caption || m.url}</span><Del onClick={() => del("player_media", m.id)} /></div>)}
         <div className="mt-2 grid gap-2 sm:grid-cols-[110px_1fr_1fr_auto]">
-          <select className={sel} value={md.kind} onChange={(e) => setMd({ ...md, kind: e.target.value })}><option value="photo">Photo</option><option value="video">Video</option></select>
-          <Input placeholder="Link (image URL or YouTube/Vimeo)" value={md.url} onChange={(e) => setMd({ ...md, url: e.target.value })} />
+
           <Input placeholder="Caption" value={md.caption} onChange={(e) => setMd({ ...md, caption: e.target.value })} />
           <Button onClick={() => add({ table: "player_media", row: { player_id: id, kind: md.kind as "photo", url: md.url, caption: md.caption || null, sort: data.media.length + 1 } }, () => setMd({ ...md, url: "", caption: "" }))}>Add</Button>
         </div>
