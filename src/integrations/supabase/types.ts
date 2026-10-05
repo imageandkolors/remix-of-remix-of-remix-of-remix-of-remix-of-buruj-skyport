@@ -14,10 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_documents: {
+        Row: {
+          application_id: string
+          created_at: string
+          document_type: string
+          id: string
+          mime_type: string
+          original_filename: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          document_type: string
+          id?: string
+          mime_type: string
+          original_filename: string
+          size_bytes: number
+          storage_path: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          document_type?: string
+          id?: string
+          mime_type?: string
+          original_filename?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           address: string | null
           admin_notes: string | null
+          ai_assessed_at: string | null
+          ai_assessment: Json | null
           consent: boolean
           created_at: string
           current_class: string | null
@@ -44,6 +87,8 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_notes?: string | null
+          ai_assessed_at?: string | null
+          ai_assessment?: Json | null
           consent?: boolean
           created_at?: string
           current_class?: string | null
@@ -70,6 +115,8 @@ export type Database = {
         Update: {
           address?: string | null
           admin_notes?: string | null
+          ai_assessed_at?: string | null
+          ai_assessment?: Json | null
           consent?: boolean
           created_at?: string
           current_class?: string | null
@@ -166,6 +213,36 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_access_requests: {
+        Row: {
+          created_at: string
+          email: string
+          guardian_name: string | null
+          id: string
+          reference_number: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          guardian_name?: string | null
+          id?: string
+          reference_number: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          guardian_name?: string | null
+          id?: string
+          reference_number?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       player_compliance: {
         Row: {
           fifa_connect_id: string | null
@@ -205,6 +282,56 @@ export type Database = {
             foreignKeyName: "player_compliance_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: true
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_cv_requests: {
+        Row: {
+          country: string | null
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          organisation: string
+          player_id: string
+          purpose: string
+          requester_name: string
+          role: string | null
+          status: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          organisation: string
+          player_id: string
+          purpose: string
+          requester_name: string
+          role?: string | null
+          status?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          organisation?: string
+          player_id?: string
+          purpose?: string
+          requester_name?: string
+          role?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_cv_requests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "player_profiles"
             referencedColumns: ["id"]
           },
@@ -619,6 +746,57 @@ export type Database = {
           tagline?: string | null
           trial_countries?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          email: string
+          facebook: string | null
+          footer_bg: string
+          footer_fg: string
+          header_bg: string
+          header_fg: string
+          id: number
+          instagram: string | null
+          phone: string | null
+          tiktok: string | null
+          updated_at: string
+          whatsapp: string
+          x_url: string | null
+          youtube: string | null
+        }
+        Insert: {
+          email?: string
+          facebook?: string | null
+          footer_bg?: string
+          footer_fg?: string
+          header_bg?: string
+          header_fg?: string
+          id?: number
+          instagram?: string | null
+          phone?: string | null
+          tiktok?: string | null
+          updated_at?: string
+          whatsapp?: string
+          x_url?: string | null
+          youtube?: string | null
+        }
+        Update: {
+          email?: string
+          facebook?: string | null
+          footer_bg?: string
+          footer_fg?: string
+          header_bg?: string
+          header_fg?: string
+          id?: number
+          instagram?: string | null
+          phone?: string | null
+          tiktok?: string | null
+          updated_at?: string
+          whatsapp?: string
+          x_url?: string | null
+          youtube?: string | null
         }
         Relationships: []
       }
