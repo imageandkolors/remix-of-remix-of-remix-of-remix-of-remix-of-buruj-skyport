@@ -17,3 +17,11 @@
 - [x] Restored programmes, sample players and news after the remix
 - [x] Programme detail pages and admin programme manager
 - [ ] Activate guardian status emails — blocked until an owned sender domain is configured
+## Current build
+- [ ] Admin settings (WhatsApp, email, socials, header/footer colours) read live by Header/Footer
+- [ ] AI admissions assistant in staff dashboard
+- [ ] Parent portal: magic link only, parent requests, admin approves & sends
+- [ ] Application documents uploaded from device; no URL inputs anywhere
+- [ ] Save & continue later on application form
+- [ ] Football Development in /apply + contact; Apply pre-selection
+- [ ] Player profile: Request CV, hide minors' DOB, native video, verified badge
