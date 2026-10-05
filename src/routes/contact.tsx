@@ -76,7 +76,7 @@ function Contact() {
             <div className="space-y-1.5">
               <Label htmlFor="programme">Interested in</Label>
               <select id="programme" name="programme" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                <option>Play & Study</option><option>Football Camping</option><option>Trials</option><option>General</option>
+                <option>Football & Education</option><option>Football Development</option><option>Football Camping</option><option>Trials</option><option>General</option>
               </select>
             </div>
             <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="message">Message *</Label><Textarea id="message" name="message" rows={5} required /></div>

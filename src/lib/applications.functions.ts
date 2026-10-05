@@ -246,3 +246,25 @@ export const analyzeApplication = createServerFn({ method: "POST" })
     await db.from("applications").update({ ai_assessment: result, ai_assessed_at: assessed_at }).eq("id", app.id);
     return { ...result, assessed_at };
   });
+
+/** Public: submit an application; returns id + reference so the family can upload documents next. */
+export const submitApplication = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    programme: z.string().trim().min(2).max(120),
+    player_name: z.string().trim().min(2).max(120),
+    date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    gender: z.string().max(20).nullable(), position: z.string().max(60).nullable(),
+    current_school: z.string().max(150).nullable(), current_class: z.string().max(40).nullable(),
+    guardian_name: z.string().trim().min(2).max(120), guardian_relationship: z.string().max(40).nullable(),
+    guardian_phone: z.string().trim().min(7).max(30), guardian_email: z.string().trim().toLowerCase().email().max(255).nullable(),
+    address: z.string().max(300).nullable(), medical_notes: z.string().max(1000).nullable(), motivation: z.string().max(1500).nullable(),
+    consent: z.literal(true),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const { data: prog } = await db.from("programmes").select("name").eq("name", data.programme).eq("is_published", true).maybeSingle();
+    if (!prog) throw new Error("Choose a valid programme");
+    const { data: row, error } = await db.from("applications").insert({ ...data, status: "submitted" }).select("id, reference_number").single();
+    if (error || !row) throw new Error("Could not submit application");
+    return row;
+  });
