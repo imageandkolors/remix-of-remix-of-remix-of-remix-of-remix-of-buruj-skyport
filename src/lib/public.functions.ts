@@ -3,6 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { PROGRAMME_COLUMNS, normaliseSections, type Programme } from "./programmes";
 
+function ageOf(dob: string | null) {
+  if (!dob) return null;
+  const d = new Date(dob), n = new Date();
+  let a = n.getFullYear() - d.getFullYear();
+  if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--;
+  return a;
+}
+/** Never expose full birth dates publicly — only age and birth year. */
+function safeDob<T extends { date_of_birth: string | null }>(p: T) {
+  const { date_of_birth, ...rest } = p;
+  return { ...rest, age: ageOf(date_of_birth), birth_year: date_of_birth ? Number(date_of_birth.slice(0, 4)) : null };
+}
+
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   return createClient<Database>(process.env["SUPABASE_URL"]!, key, {
@@ -61,9 +74,9 @@ export const getPlayers = createServerFn({ method: "GET" }).handler(async () => 
     .order("jersey_number", { ascending: true });
   if (error) throw new Error(error.message);
   return Promise.all((data ?? []).map(async (player) => {
-    if (!player.avatar_url || /^https?:\/\//.test(player.avatar_url)) return player;
+    if (!player.avatar_url || /^https?:\/\//.test(player.avatar_url)) return safeDob(player);
     const { data: signed } = await client.storage.from("player-profile-media").createSignedUrl(player.avatar_url, 3600);
-    return { ...player, avatar_url: signed?.signedUrl ?? null };
+    return safeDob({ ...player, avatar_url: signed?.signedUrl ?? null });
   }));
 });
 
@@ -73,7 +86,7 @@ export const getPlayer = createServerFn({ method: "GET" })
     const c = publicClient();
     const { data: p, error } = await c
       .from("player_profiles")
-      .select("id, slug, full_name, jersey_number, position, secondary_position, preferred_foot, date_of_birth, height_cm, weight_kg, nationality, programme, avatar_url, bio, overall_rating, pace, technical, tactical, physical, passing, finishing, video_cv_url, joined_on, cv_summary")
+      .select("id, slug, full_name, jersey_number, position, secondary_position, preferred_foot, date_of_birth, height_cm, weight_kg, nationality, programme, avatar_url, bio, overall_rating, pace, technical, tactical, physical, passing, finishing, video_cv_url, joined_on, cv_summary, updated_at")
       .eq("slug", data.slug).eq("is_published", true).maybeSingle();
     if (error) throw new Error(error.message);
     if (!p) return null;
@@ -90,7 +103,7 @@ export const getPlayer = createServerFn({ method: "GET" })
     const resolvedMedia = await Promise.all((media.data ?? []).map(async (item) => ({ ...item, url: (await signedUrl(item.url)) ?? item.url })));
     const { id: _id, ...player } = p;
     return {
-      player: { ...player, avatar_url: await signedUrl(player.avatar_url), video_cv_url: await signedUrl(player.video_cv_url) },
+      player: { ...safeDob(player), avatar_url: await signedUrl(player.avatar_url), video_cv_url: await signedUrl(player.video_cv_url) },
       stats: stats.data ?? [], milestones: milestones.data ?? [], media: resolvedMedia,
     };
   });

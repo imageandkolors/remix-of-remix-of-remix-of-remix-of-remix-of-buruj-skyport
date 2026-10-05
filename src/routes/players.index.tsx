@@ -6,7 +6,8 @@ import { playersQuery } from "@/lib/queries";
 import { Reveal } from "@/components/site/Reveal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import teamPhoto from "@/assets/hero-campus.jpg";
+import teamAsset from "@/assets/buruj-team.jpeg.asset.json";
+const teamPhoto = teamAsset.url;
 
 export const Route = createFileRoute("/players/")({
   head: () => ({
@@ -32,7 +33,7 @@ const POSITIONS = [
   { k: "MID", l: "Midfielders" },
   { k: "FWD", l: "Forwards" },
 ] as const;
-const PROGRAMMES = ["All", "Play & Study", "Football Camping"] as const;
+const PROGRAMMES = ["All", "Football & Education", "Football Development", "Football Camping"] as const;
 const POS_LABEL: Record<string, string> = { GK: "Goalkeeper", DEF: "Defender", MID: "Midfielder", FWD: "Forward" };
 
 function age(dob: string | null) {
@@ -111,7 +112,7 @@ function Players() {
                     <h2 className="text-2xl font-extrabold uppercase text-navy">{p.full_name}</h2>
                     <p className="text-sm text-muted-foreground">{POS_LABEL[p.position] ?? p.position}{p.secondary_position ? ` · also ${p.secondary_position}` : ""}</p>
                     <dl className="mt-4 grid grid-cols-3 gap-2 border-t pt-4 text-center">
-                      <div><dt className="text-xs uppercase text-muted-foreground">Age</dt><dd className="font-display text-xl font-bold text-navy">{age(p.date_of_birth) ?? "–"}</dd></div>
+                      <div><dt className="text-xs uppercase text-muted-foreground">Age</dt><dd className="font-display text-xl font-bold text-navy">{p.age ?? "–"}</dd></div>
                       <div><dt className="text-xs uppercase text-muted-foreground">Foot</dt><dd className="font-display text-xl font-bold text-navy">{p.preferred_foot ?? "–"}</dd></div>
                       <div><dt className="text-xs uppercase text-muted-foreground">Prog.</dt><dd className="font-display text-sm font-bold leading-7 text-navy">{p.programme === "Play & Study" ? "P&S" : p.programme ? "Camp" : "–"}</dd></div>
                     </dl>
