@@ -214,7 +214,7 @@ function Extras({ id, data }: { id: string; data: Detail }) {
         <div className="mt-2 grid gap-2 sm:grid-cols-[110px_1fr_1fr_auto]">
 
           <Input placeholder="Caption" value={md.caption} onChange={(e) => setMd({ ...md, caption: e.target.value })} />
-          <Button onClick={() => add({ table: "player_media", row: { player_id: id, kind: md.kind as "photo", url: md.url, caption: md.caption || null, sort: data.media.length + 1 } }, () => setMd({ ...md, url: "", caption: "" }))}>Add</Button>
+          <PlayerFilePicker playerId={id} purpose="media" label="Upload photo or clip" accept="image/*,video/mp4,video/quicktime,video/webm" caption={md.caption} onDone={() => { setMd({ ...md, caption: "" }); refresh(); }} />
         </div>
       </section>
     </div>

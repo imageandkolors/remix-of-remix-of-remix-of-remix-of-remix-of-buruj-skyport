@@ -27,8 +27,6 @@ const playerSchema = z.object({
   weight_kg: z.number().int().min(25).max(150).nullable(),
   nationality: optText(60),
   programme: z.enum(["Play & Study", "Football Camping"]).nullable(),
-  avatar_url: z.string().trim().max(500).nullable().optional(),
-  video_cv_url: z.string().trim().max(500).nullable().optional(),
   bio: optText(600),
   cv_summary: optText(3000),
   overall_rating: rating, pace: rating, technical: rating, tactical: rating, physical: rating, passing: rating, finishing: rating,
