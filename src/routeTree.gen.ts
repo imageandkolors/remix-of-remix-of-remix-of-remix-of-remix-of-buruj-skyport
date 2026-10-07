@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProgrammesRouteImport } from './routes/_authenticated/programmes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -70,6 +71,11 @@ const PortalRoute = PortalRouteImport.update({
   path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/programmes': typeof AuthenticatedProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/programmes': typeof AuthenticatedProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/programmes': typeof AuthenticatedProgrammesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/portal'
+    | '/privacy-policy'
     | '/dashboard'
     | '/programmes'
     | '/settings'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/portal'
+    | '/privacy-policy'
     | '/dashboard'
     | '/programmes'
     | '/settings'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/portal'
+    | '/privacy-policy'
     | '/_authenticated/dashboard'
     | '/_authenticated/programmes'
     | '/_authenticated/settings'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   GalleryRoute: typeof GalleryRoute
   PortalRoute: typeof PortalRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   PlayersSlugRoute: typeof PlayersSlugRoute
   ProgrammesSlugRoute: typeof ProgrammesSlugRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -373,6 +393,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   GalleryRoute: GalleryRoute,
   PortalRoute: PortalRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   PlayersSlugRoute: PlayersSlugRoute,
   ProgrammesSlugRoute: ProgrammesSlugRoute,
   PlayersIndexRoute: PlayersIndexRoute,
