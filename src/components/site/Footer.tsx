@@ -25,6 +25,7 @@ export function Footer() {
             <li><Link to="/admissions" className="hover:text-gold">Admissions & trials</Link></li>
             <li><Link to="/gallery" className="hover:text-gold">Media & news</Link></li>
             <li><Link to="/contact" className="hover:text-gold">Contact & campus</Link></li>
+            <li><Link to="/privacy-policy" className="hover:text-gold">Privacy policy</Link></li>
           </ul>
         </div>
         <div>
