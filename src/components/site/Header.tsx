@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import logoAsset from "@/assets/buruj-crest.jpeg.asset.json";
+import logoAsset from "@/assets/buruj-wordmark.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { useTrialSheet } from "./TrialForm";
 import { useSiteSettings } from "@/lib/use-site-settings";
@@ -9,8 +9,10 @@ import { useSiteSettings } from "@/lib/use-site-settings";
 const NAV = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
+  { to: "/programmes", label: "Programmes" },
   { to: "/players", label: "Squad" },
   { to: "/admissions", label: "Admissions" },
+  { to: "/news", label: "News" },
   { to: "/gallery", label: "Media" },
   { to: "/contact", label: "Contact" },
   { to: "/portal", label: "Parents" },
@@ -24,7 +26,7 @@ export function Header() {
     <header style={{ backgroundColor: s.header_bg, color: s.header_fg }} className="sticky top-0 z-50 border-b border-current/10 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto shrink-0 rounded bg-white/95 px-2 py-1" />
+          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-11 w-auto shrink-0 object-contain" />
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {NAV.map((n) => (

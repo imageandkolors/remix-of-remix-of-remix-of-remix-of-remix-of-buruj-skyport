@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Mail, MessageCircle } from "lucide-react";
-import logoAsset from "@/assets/buruj-crest.jpeg.asset.json";
+import logoAsset from "@/assets/buruj-wordmark.png.asset.json";
 import { SITE } from "@/lib/site";
 import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 
@@ -12,7 +12,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded bg-white/95 px-3 py-2" />
+            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto object-contain" />
           </div>
           <p className="mt-4 max-w-md opacity-75">
             Elite football development and residential Play & Study in Ikorodu, Lagos — shaping disciplined athletes and scholars since 2013.
@@ -23,7 +23,9 @@ export function Footer() {
           <ul className="mt-3 space-y-2 opacity-85">
             <li><Link to="/about" className="hover:text-gold">About the academy</Link></li>
             <li><Link to="/admissions" className="hover:text-gold">Admissions & trials</Link></li>
-            <li><Link to="/gallery" className="hover:text-gold">Media & news</Link></li>
+            <li><Link to="/programmes" className="hover:text-gold">Programmes</Link></li>
+            <li><Link to="/news" className="hover:text-gold">News</Link></li>
+            <li><Link to="/gallery" className="hover:text-gold">Media gallery</Link></li>
             <li><Link to="/contact" className="hover:text-gold">Contact & campus</Link></li>
             <li><Link to="/privacy-policy" className="hover:text-gold">Privacy policy</Link></li>
           </ul>

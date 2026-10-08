@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { deleteProgramme, listProgrammesAdmin, saveProgramme } from "@/lib/programmes.functions";
 import { formatFee, type Programme } from "@/lib/programmes";
 
-export const Route = createFileRoute("/_authenticated/programmes")({
+export const Route = createFileRoute("/_authenticated/manage-programmes")({
   head: () => ({ meta: [
     { title: "Programme Manager — Buruj Sports Academy" },
     { name: "description", content: "Admin workspace to edit programme fees, sessions and content." },

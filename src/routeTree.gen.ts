@@ -20,7 +20,7 @@ import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedProgrammesRouteImport } from './routes/_authenticated/programmes'
+import { Route as AuthenticatedManageProgrammesRouteImport } from './routes/_authenticated/manage-programmes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
@@ -81,11 +81,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedProgrammesRoute = AuthenticatedProgrammesRouteImport.update({
-  id: '/programmes',
-  path: '/programmes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedManageProgrammesRoute =
+  AuthenticatedManageProgrammesRouteImport.update({
+    id: '/manage-programmes',
+    path: '/manage-programmes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -123,7 +124,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/programmes': typeof AuthenticatedProgrammesRoute
+  '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
@@ -141,7 +142,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/programmes': typeof AuthenticatedProgrammesRoute
+  '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
@@ -161,7 +162,7 @@ export interface FileRoutesById {
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/programmes': typeof AuthenticatedProgrammesRoute
+  '/_authenticated/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/players/$slug': typeof PlayersSlugRoute
@@ -181,7 +182,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/privacy-policy'
     | '/dashboard'
-    | '/programmes'
+    | '/manage-programmes'
     | '/settings'
     | '/squad'
     | '/players/$slug'
@@ -199,7 +200,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/privacy-policy'
     | '/dashboard'
-    | '/programmes'
+    | '/manage-programmes'
     | '/settings'
     | '/squad'
     | '/players/$slug'
@@ -218,7 +219,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/privacy-policy'
     | '/_authenticated/dashboard'
-    | '/_authenticated/programmes'
+    | '/_authenticated/manage-programmes'
     | '/_authenticated/settings'
     | '/_authenticated/squad'
     | '/players/$slug'
@@ -321,11 +322,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/programmes': {
-      id: '/_authenticated/programmes'
-      path: '/programmes'
-      fullPath: '/programmes'
-      preLoaderRoute: typeof AuthenticatedProgrammesRouteImport
+    '/_authenticated/manage-programmes': {
+      id: '/_authenticated/manage-programmes'
+      path: '/manage-programmes'
+      fullPath: '/manage-programmes'
+      preLoaderRoute: typeof AuthenticatedManageProgrammesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -368,14 +369,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedProgrammesRoute: typeof AuthenticatedProgrammesRoute
+  AuthenticatedManageProgrammesRoute: typeof AuthenticatedManageProgrammesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedProgrammesRoute: AuthenticatedProgrammesRoute,
+  AuthenticatedManageProgrammesRoute: AuthenticatedManageProgrammesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }
