@@ -14,7 +14,7 @@ const SLIDES = [
   { img: footballTeam, eyebrow: "Elite football development", title: "Built for the next level", body: "NFF & LSFA certified coaches, structured daily sessions and a proven player pathway." },
   { img: students, eyebrow: "Residential Play & Study", title: "Train hard. Learn harder.", body: "Full JSS 1 – SS 3 schooling alongside professional-grade training, with 24/7 welfare care." },
   { img: trials, eyebrow: "International trials", title: "UK · Spain · Italy", body: "Showcase opportunities that put Buruj players in front of European clubs and scouts." },
-  { img: campus, eyebrow: "The Ikorodu campus", title: "Home of Buruj Sports Academy", body: "Home of Buruj Sports Academy — pitch, boarding and classrooms together in Ogolonto, Ikorodu, Lagos." },
+  { img: campus, eyebrow: "The Ikorodu campus", title: "Home of Buruj Sports Academy", body: "Pitch, boarding and classrooms together in Ogolonto, Ikorodu, Lagos." },
 ];
 
 export function HeroSlider() {

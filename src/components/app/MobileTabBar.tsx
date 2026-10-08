@@ -3,7 +3,7 @@ import { Home, GraduationCap, Users, FilePen, UserRound } from "lucide-react";
 
 const TABS = [
   { to: "/", label: "Home", icon: Home, exact: true },
-  { to: "/admissions", label: "Programmes", icon: GraduationCap },
+  { to: "/programmes", label: "Programmes", icon: GraduationCap },
   { to: "/players", label: "Squad", icon: Users },
   { to: "/apply", label: "Apply", icon: FilePen },
   { to: "/portal", label: "Parents", icon: UserRound },
@@ -20,7 +20,7 @@ export function MobileTabBar() {
     >
       <ul className="grid grid-cols-5">
         {TABS.map((t) => {
-          const active = "exact" in t ? path === t.to : path.startsWith(t.to) || (t.to === "/admissions" && path.startsWith("/programmes"));
+          const active = "exact" in t ? path === t.to : path.startsWith(t.to);
           const Icon = t.icon;
           return (
             <li key={t.to}>
