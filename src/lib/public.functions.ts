@@ -54,17 +54,6 @@ export const getProgramme = createServerFn({ method: "GET" })
     return p ? { ...p, sections: normaliseSections(p.sections) } : null;
   });
 
-export const getNews = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await publicClient()
-    .from("news_posts")
-    .select("id, title, excerpt, published_at")
-    .eq("published", true)
-    .order("published_at", { ascending: false })
-    .limit(6);
-  if (error) throw new Error(error.message);
-  return data ?? [];
-});
-
 export const getPlayers = createServerFn({ method: "GET" }).handler(async () => {
   const client = publicClient();
   const { data, error } = await client
