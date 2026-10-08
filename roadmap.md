@@ -25,3 +25,6 @@
 - [x] Save & continue later on application form
 - [x] Football Development in /apply + contact; Apply pre-selection
 - [x] Player profile: Request CV, hide minors' DOB, native video, verified badge
+- [x] New BSA crest logo, favicon and app icons
+- [x] App-style phone experience: splash screen, bottom navigation
+- [x] Install-app prompt, cookie notice, privacy policy page

@@ -16,6 +16,10 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { TrialSheetProvider } from "@/components/site/TrialForm";
+import { SplashScreen } from "@/components/app/SplashScreen";
+import { MobileTabBar } from "@/components/app/MobileTabBar";
+import { InstallPrompt } from "@/components/app/InstallPrompt";
+import { CookieConsent } from "@/components/app/CookieConsent";
 
 function NotFoundComponent() {
   return (
@@ -135,9 +139,15 @@ function RootComponent() {
         <main>
           <Outlet />
         </main>
-        <Footer />
+        <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+          <Footer />
+        </div>
+        <MobileTabBar />
       </TrialSheetProvider>
       <Toaster richColors />
+      <SplashScreen />
+      <InstallPrompt />
+      <CookieConsent />
     </QueryClientProvider>
   );
 }
