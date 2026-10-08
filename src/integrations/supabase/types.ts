@@ -185,30 +185,45 @@ export type Database = {
       }
       news_posts: {
         Row: {
+          author: string | null
           body: string | null
+          category: string
+          cover_path: string | null
           created_at: string
           excerpt: string | null
           id: string
+          is_featured: boolean
           published: boolean
           published_at: string | null
+          slug: string | null
           title: string
         }
         Insert: {
+          author?: string | null
           body?: string | null
+          category?: string
+          cover_path?: string | null
           created_at?: string
           excerpt?: string | null
           id?: string
+          is_featured?: boolean
           published?: boolean
           published_at?: string | null
+          slug?: string | null
           title: string
         }
         Update: {
+          author?: string | null
           body?: string | null
+          category?: string
+          cover_path?: string | null
           created_at?: string
           excerpt?: string | null
           id?: string
+          is_featured?: boolean
           published?: boolean
           published_at?: string | null
+          slug?: string | null
           title?: string
         }
         Relationships: []
@@ -797,6 +812,42 @@ export type Database = {
           whatsapp?: string
           x_url?: string | null
           youtube?: string | null
+        }
+        Relationships: []
+      }
+      splash_slides: {
+        Row: {
+          bg_color: string
+          created_at: string
+          id: string
+          image_path: string | null
+          is_active: boolean
+          kind: string
+          sort: number
+          subtitle: string | null
+          title: string | null
+        }
+        Insert: {
+          bg_color?: string
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          kind?: string
+          sort?: number
+          subtitle?: string | null
+          title?: string | null
+        }
+        Update: {
+          bg_color?: string
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          kind?: string
+          sort?: number
+          subtitle?: string | null
+          title?: string | null
         }
         Relationships: []
       }
