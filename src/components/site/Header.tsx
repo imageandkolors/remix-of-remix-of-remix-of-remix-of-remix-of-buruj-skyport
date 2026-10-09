@@ -28,7 +28,7 @@ export function Header() {
         <Link to="/" className="flex min-w-0 items-center gap-2">
           <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-11 w-auto shrink-0 object-contain" />
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-4 lg:flex">
           {NAV.map((n) => (
             <Link
               key={n.to}
@@ -44,12 +44,12 @@ export function Header() {
             Register for trials
           </Button>
         </nav>
-        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+        <button className="lg:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <nav className="flex flex-col gap-1 border-t border-current/10 px-4 pb-4 md:hidden">
+        <nav className="flex flex-col gap-1 border-t border-current/10 px-4 pb-4 lg:hidden">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="py-2 font-display text-lg font-semibold uppercase">
               {n.label}
