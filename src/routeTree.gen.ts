@@ -19,6 +19,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated/content'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedManageProgrammesRouteImport } from './routes/_authenticated/manage-programmes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -78,6 +79,11 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedContentRoute = AuthenticatedContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/content': typeof AuthenticatedContentRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/content': typeof AuthenticatedContentRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/portal'
     | '/privacy-policy'
+    | '/content'
     | '/dashboard'
     | '/manage-programmes'
     | '/settings'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/portal'
     | '/privacy-policy'
+    | '/content'
     | '/dashboard'
     | '/manage-programmes'
     | '/settings'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/portal'
     | '/privacy-policy'
+    | '/_authenticated/content'
     | '/_authenticated/dashboard'
     | '/_authenticated/manage-programmes'
     | '/_authenticated/settings'
@@ -354,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/content': {
+      id: '/_authenticated/content'
+      path: '/content'
+      fullPath: '/content'
+      preLoaderRoute: typeof AuthenticatedContentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -428,6 +447,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedManageProgrammesRoute: typeof AuthenticatedManageProgrammesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -435,6 +455,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedManageProgrammesRoute: AuthenticatedManageProgrammesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
