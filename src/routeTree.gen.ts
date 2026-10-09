@@ -23,8 +23,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedManageProgrammesRouteImport } from './routes/_authenticated/manage-programmes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
+import { Route as NewsIndexRouteImport } from './routes/news.index'
+import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as PlayersSlugRouteImport } from './routes/players.$slug'
+import { Route as ProgrammesIndexRouteImport } from './routes/programmes.index'
 import { Route as ProgrammesSlugRouteImport } from './routes/programmes.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +100,16 @@ const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   path: '/squad',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const NewsIndexRoute = NewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsSlugRoute = NewsSlugRouteImport.update({
+  id: '/news/$slug',
+  path: '/news/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlayersIndexRoute = PlayersIndexRouteImport.update({
   id: '/players/',
   path: '/players/',
@@ -105,6 +118,11 @@ const PlayersIndexRoute = PlayersIndexRouteImport.update({
 const PlayersSlugRoute = PlayersSlugRouteImport.update({
   id: '/players/$slug',
   path: '/players/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgrammesIndexRoute = ProgrammesIndexRouteImport.update({
+  id: '/programmes/',
+  path: '/programmes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgrammesSlugRoute = ProgrammesSlugRouteImport.update({
@@ -127,9 +145,12 @@ export interface FileRoutesByFullPath {
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
+  '/news/': typeof NewsIndexRoute
   '/players/': typeof PlayersIndexRoute
+  '/programmes/': typeof ProgrammesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,9 +166,12 @@ export interface FileRoutesByTo {
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
+  '/news': typeof NewsIndexRoute
   '/players': typeof PlayersIndexRoute
+  '/programmes': typeof ProgrammesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,9 +189,12 @@ export interface FileRoutesById {
   '/_authenticated/manage-programmes': typeof AuthenticatedManageProgrammesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
+  '/news/': typeof NewsIndexRoute
   '/players/': typeof PlayersIndexRoute
+  '/programmes/': typeof ProgrammesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -185,9 +212,12 @@ export interface FileRouteTypes {
     | '/manage-programmes'
     | '/settings'
     | '/squad'
+    | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
+    | '/news/'
     | '/players/'
+    | '/programmes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -203,9 +233,12 @@ export interface FileRouteTypes {
     | '/manage-programmes'
     | '/settings'
     | '/squad'
+    | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
+    | '/news'
     | '/players'
+    | '/programmes'
   id:
     | '__root__'
     | '/'
@@ -222,9 +255,12 @@ export interface FileRouteTypes {
     | '/_authenticated/manage-programmes'
     | '/_authenticated/settings'
     | '/_authenticated/squad'
+    | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
+    | '/news/'
     | '/players/'
+    | '/programmes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,9 +274,12 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   PortalRoute: typeof PortalRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  NewsSlugRoute: typeof NewsSlugRoute
   PlayersSlugRoute: typeof PlayersSlugRoute
   ProgrammesSlugRoute: typeof ProgrammesSlugRoute
+  NewsIndexRoute: typeof NewsIndexRoute
   PlayersIndexRoute: typeof PlayersIndexRoute
+  ProgrammesIndexRoute: typeof ProgrammesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -343,6 +382,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSquadRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/news/': {
+      id: '/news/'
+      path: '/news'
+      fullPath: '/news/'
+      preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/$slug': {
+      id: '/news/$slug'
+      path: '/news/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof NewsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/players/': {
       id: '/players/'
       path: '/players'
@@ -355,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/players/$slug'
       fullPath: '/players/$slug'
       preLoaderRoute: typeof PlayersSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programmes/': {
+      id: '/programmes/'
+      path: '/programmes'
+      fullPath: '/programmes/'
+      preLoaderRoute: typeof ProgrammesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/programmes/$slug': {
@@ -395,9 +455,12 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   PortalRoute: PortalRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  NewsSlugRoute: NewsSlugRoute,
   PlayersSlugRoute: PlayersSlugRoute,
   ProgrammesSlugRoute: ProgrammesSlugRoute,
+  NewsIndexRoute: NewsIndexRoute,
   PlayersIndexRoute: PlayersIndexRoute,
+  ProgrammesIndexRoute: ProgrammesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
