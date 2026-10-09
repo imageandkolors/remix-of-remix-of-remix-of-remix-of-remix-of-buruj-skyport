@@ -45,7 +45,7 @@ function NewsPage() {
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b-4 border-navy pb-3">
           <h1 className="text-5xl font-extrabold uppercase leading-none text-navy sm:text-6xl">Buruj News</h1>
-          <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+          <p className="text-sm text-muted-foreground">Official news from Ikorodu, Lagos</p>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-b py-2">
           {cats.map((c) => <button key={c} onClick={() => setCat(c)} className={cn("shrink-0 rounded px-3 py-1.5 font-display text-sm font-bold uppercase tracking-wide", cat === c ? "bg-navy text-navy-foreground" : "text-navy hover:bg-secondary")}>{c}</button>)}
