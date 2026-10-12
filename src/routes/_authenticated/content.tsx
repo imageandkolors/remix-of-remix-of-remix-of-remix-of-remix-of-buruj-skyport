@@ -9,20 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { deleteNews, deleteSlide, listContentAdmin, saveNews, saveSlide, type NewsItem, type SplashSlide } from "@/lib/content.functions";
+import { deleteNews, listContentAdmin, saveNews, type NewsItem } from "@/lib/content.functions";
 
 export const Route = createFileRoute("/_authenticated/content")({
   head: () => ({ meta: [
     { title: "Content Manager — Buruj Sports Academy" },
-    { name: "description", content: "Admin workspace for splash slides and news articles." },
+    { name: "description", content: "Admin workspace for news articles." },
     { property: "og:title", content: "Content Manager — Buruj Sports Academy" },
-    { property: "og:description", content: "Manage splash slides and news." },
+    { property: "og:description", content: "Manage news articles." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),
   component: ContentManager,
 });
 
-function ImagePick({ folder, url, onPath }: { folder: "splash" | "news"; url: string | null; onPath: (p: string | null, preview: string | null) => void }) {
+function ImagePick({ folder, url, onPath }: { folder: "news"; url: string | null; onPath: (p: string | null, preview: string | null) => void }) {
   const [busy, setBusy] = useState(false);
   async function up(f: File) {
     if (!f.type.startsWith("image/")) { toast.error("Choose an image file"); return; }
@@ -44,22 +44,14 @@ function ImagePick({ folder, url, onPath }: { folder: "splash" | "news"; url: st
   );
 }
 
-const KINDS = [["crest", "Logo crest + text"], ["image", "Picture only"], ["text", "Text only"], ["image_text", "Picture with text"]] as const;
 
 function ContentManager() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["admin-content"], queryFn: () => listContentAdmin() });
-  const [slide, setSlide] = useState<SplashSlide | null>(null);
   const [art, setArt] = useState<NewsItem | null>(null);
   const [busy, setBusy] = useState(false);
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["admin-content"] }); qc.invalidateQueries({ queryKey: ["news"] }); qc.invalidateQueries({ queryKey: ["splash"] }); };
-  const slides = q.data?.slides ?? [];
+  const refresh = () => { qc.invalidateQueries({ queryKey: ["admin-content"] }); qc.invalidateQueries({ queryKey: ["news"] }); };
 
-  async function submitSlide() {
-    if (!slide) return; setBusy(true);
-    try { await saveSlide({ data: { id: slide.id || undefined, sort: slide.sort, kind: slide.kind as "crest", title: slide.title, subtitle: slide.subtitle, image_path: slide.image_path, bg_color: slide.bg_color, is_active: slide.is_active } }); toast.success("Slide saved"); setSlide(null); refresh(); }
-    catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
-  }
   async function submitArt() {
     if (!art) return; setBusy(true);
     try { await saveNews({ data: { id: art.id || undefined, title: art.title, slug: art.slug || undefined, excerpt: art.excerpt, body: art.body, category: art.category, author: art.author, cover_path: art.cover_path, is_featured: art.is_featured, published: art.published, published_at: art.published_at } }); toast.success("Article saved"); setArt(null); refresh(); }
