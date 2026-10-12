@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import logoAsset from "@/assets/buruj-crest.jpeg.asset.json";
+import logoAssetSrc from "@/assets/buruj-crest.jpeg";
+const logoAsset = { url: logoAssetSrc };
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 

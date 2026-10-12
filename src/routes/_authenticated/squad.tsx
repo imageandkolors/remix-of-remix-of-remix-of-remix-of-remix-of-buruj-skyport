@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlayerFilePicker } from "@/components/staff/PlayerFilePicker";
-import logoAsset from "@/assets/buruj-crest.jpeg.asset.json";
+import logoAssetSrc from "@/assets/buruj-crest.jpeg";
+const logoAsset = { url: logoAssetSrc };
 import { type PlayerItemInput, addPlayerItem, deletePlayerItem, getSquadPlayer, listSquad, savePlayer } from "@/lib/squad.functions";
 
 export const Route = createFileRoute("/_authenticated/squad")({

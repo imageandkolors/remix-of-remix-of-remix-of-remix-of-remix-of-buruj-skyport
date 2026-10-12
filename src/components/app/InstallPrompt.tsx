@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Download, Share, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import crest from "@/assets/buruj-crest.jpeg.asset.json";
+import crestSrc from "@/assets/buruj-crest.jpeg";
+const crest = { url: crestSrc };
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 const KEY = "bsa-install-dismissed";

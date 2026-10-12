@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import teamAsset from "@/assets/buruj-team.jpeg.asset.json";
-import studentsAsset from "@/assets/buruj-students.jpeg.asset.json";
+import teamAssetSrc from "@/assets/buruj-team.jpeg";
+const teamAsset = { url: teamAssetSrc };
+import studentsAssetSrc from "@/assets/buruj-students.jpeg";
+const studentsAsset = { url: studentsAssetSrc };
 import trials from "@/assets/hero-trials.jpg";
 import campus from "@/assets/hero-campus.jpg";
 
