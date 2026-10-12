@@ -6,7 +6,8 @@ import { playersQuery } from "@/lib/queries";
 import { Reveal } from "@/components/site/Reveal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import teamAsset from "@/assets/buruj-team.jpeg.asset.json";
+import teamAssetSrc from "@/assets/buruj-team.jpeg";
+const teamAsset = { url: teamAssetSrc };
 const teamPhoto = teamAsset.url;
 
 export const Route = createFileRoute("/players/")({

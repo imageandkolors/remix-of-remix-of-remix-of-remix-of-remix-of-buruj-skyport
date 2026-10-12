@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import logoAsset from "@/assets/buruj-wordmark.png.asset.json";
+import logoAssetSrc from "@/assets/buruj-logo-full.jpeg";
+const logoAsset = { url: logoAssetSrc };
 import { Button } from "@/components/ui/button";
 import { useTrialSheet } from "./TrialForm";
 import { useSiteSettings } from "@/lib/use-site-settings";

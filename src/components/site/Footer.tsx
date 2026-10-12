@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Mail, MessageCircle } from "lucide-react";
-import logoAsset from "@/assets/buruj-wordmark.png.asset.json";
+import logoAssetSrc from "@/assets/buruj-logo-full.jpeg";
+const logoAsset = { url: logoAssetSrc };
 import { SITE } from "@/lib/site";
 import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 
