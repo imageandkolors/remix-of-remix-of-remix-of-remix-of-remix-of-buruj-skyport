@@ -16,7 +16,6 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { TrialSheetProvider } from "@/components/site/TrialForm";
-import { SplashScreen } from "@/components/app/SplashScreen";
 import { MobileTabBar } from "@/components/app/MobileTabBar";
 import { InstallPrompt } from "@/components/app/InstallPrompt";
 import { CookieConsent } from "@/components/app/CookieConsent";
@@ -145,7 +144,6 @@ function RootComponent() {
         <MobileTabBar />
       </TrialSheetProvider>
       <Toaster richColors />
-      <SplashScreen />
       <InstallPrompt />
       <CookieConsent />
     </QueryClientProvider>
