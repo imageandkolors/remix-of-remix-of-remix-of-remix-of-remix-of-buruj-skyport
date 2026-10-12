@@ -25,9 +25,9 @@ export function Header() {
   const s = useSiteSettings();
   return (
     <header style={{ backgroundColor: s.header_bg, color: s.header_fg }} className="sticky top-0 z-50 border-b border-current/10 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-12 w-auto shrink-0 rounded-md object-contain" />
+          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-14 w-auto shrink-0 rounded-md object-contain" />
         </Link>
         <nav className="hidden items-center gap-4 lg:flex">
           {NAV.map((n) => (
