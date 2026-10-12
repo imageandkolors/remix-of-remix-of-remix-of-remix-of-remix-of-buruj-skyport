@@ -13,7 +13,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto object-contain" />
+            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded-md object-contain" />
           </div>
           <p className="mt-4 max-w-md opacity-75">
             Elite football development and residential Play & Study in Ikorodu, Lagos — shaping disciplined athletes and scholars since 2013.
