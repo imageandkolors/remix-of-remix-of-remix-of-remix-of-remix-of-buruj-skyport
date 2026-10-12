@@ -216,13 +216,16 @@ function Apply() {
                 </div>
               )}
 
-              <div className="mt-8 flex justify-between gap-3">
-                <div className="flex gap-2"><Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="font-display uppercase"><ArrowLeft className="h-4 w-4" /> Back</Button><Button variant="ghost" onClick={saveForLater} className="font-display uppercase">Save & continue later</Button></div>
-                {step < STEPS.length - 1 ? (
-                  <Button onClick={next} className="font-display font-bold uppercase">Continue <ArrowRight className="h-4 w-4" /></Button>
-                ) : (
-                  <Button onClick={submit} disabled={loading} className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">{loading ? "Submitting…" : "Submit application"}</Button>
-                )}
+              <div className="mt-8 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)} className="min-w-0 font-display uppercase"><ArrowLeft className="h-4 w-4" /> Back</Button>
+                  {step < STEPS.length - 1 ? (
+                    <Button onClick={next} className="min-w-0 font-display font-bold uppercase">Continue <ArrowRight className="h-4 w-4" /></Button>
+                  ) : (
+                    <Button onClick={submit} disabled={loading} className="min-w-0 bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">{loading ? "Submitting…" : "Submit"}</Button>
+                  )}
+                </div>
+                <Button variant="ghost" onClick={saveForLater} className="w-full font-display uppercase">Save & continue later</Button>
               </div>
             </div>
           </>
