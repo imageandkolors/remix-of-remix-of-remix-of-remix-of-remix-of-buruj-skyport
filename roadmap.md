@@ -31,5 +31,5 @@
 - [x] New header/footer wordmark logo
 - [x] Campus slide reads "Home of Buruj Sports Academy"
 - [x] Public Programmes page; staff editor moved to Manage Programmes
-- [x] 3-slide skippable splash managed in staff Content page
+- [x] Splash screen removed (owner request)
 - [x] Newspaper-style News page + article pages, managed in Content page
