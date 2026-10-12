@@ -33,3 +33,7 @@
 - [x] Public Programmes page; staff editor moved to Manage Programmes
 - [x] Splash screen removed (owner request)
 - [x] Newspaper-style News page + article pages, managed in Content page
+- [x] BBC/CNN-style news: ticker, most read, share buttons, Google SEO tags, ad slots
+- [x] Mobile application buttons no longer overflow
+- [ ] Turn on real Google Ads — waiting on AdSense publisher ID and approval
+- [ ] Full-page text/picture CMS for every section — next phase
