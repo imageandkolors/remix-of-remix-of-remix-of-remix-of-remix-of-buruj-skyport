@@ -44,7 +44,7 @@ export function ShareBar({ url, title, className, vertical }: { url: string; tit
   );
 }
 
-const ADS_CLIENT = import.meta.env.VITE_ADSENSE_CLIENT as string | undefined;
+const ADS_CLIENT = import.meta.env["VITE_ADSENSE_CLIENT"] as string | undefined;
 declare global { interface Window { adsbygoogle?: unknown[] } }
 
 /** Google AdSense slot. Shows an academy promo until an AdSense publisher ID is configured. */
@@ -55,7 +55,7 @@ export function AdSlot({ format = "leaderboard", slot, className }: { format?: "
     if (!ADS_CLIENT || !slot) return;
     if (!document.querySelector("script[data-adsense]")) {
       const s = document.createElement("script");
-      s.async = true; s.dataset.adsense = "1"; s.crossOrigin = "anonymous";
+      s.async = true; s.setAttribute("data-adsense", "1"); s.crossOrigin = "anonymous";
       s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS_CLIENT}`;
       document.head.appendChild(s);
     }
