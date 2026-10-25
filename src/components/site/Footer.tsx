@@ -29,6 +29,7 @@ export function Footer() {
             <li><Link to="/gallery" className="hover:text-gold">Media gallery</Link></li>
             <li><Link to="/contact" className="hover:text-gold">Contact & campus</Link></li>
             <li><Link to="/privacy-policy" className="hover:text-gold">Privacy policy</Link></li>
+            <li><Link to="/auth" className="hover:text-gold">Staff admin login</Link></li>
           </ul>
         </div>
         <div>
