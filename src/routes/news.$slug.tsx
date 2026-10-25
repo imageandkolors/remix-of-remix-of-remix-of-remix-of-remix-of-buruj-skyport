@@ -70,7 +70,7 @@ function Article() {
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <AdSlot format="leaderboard" slot={import.meta.env.VITE_ADSENSE_SLOT_TOP} />
+      <AdSlot format="leaderboard" slot={import.meta.env["VITE_ADSENSE_SLOT_TOP"] as string | undefined} />
       <nav aria-label="Breadcrumb" className="mt-6 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-primary">Home</Link><ChevronRight className="h-3 w-3 shrink-0" />
         <Link to="/news" className="hover:text-primary">News</Link><ChevronRight className="h-3 w-3 shrink-0" />
@@ -101,7 +101,7 @@ function Article() {
 
           <div className="mt-8 space-y-5 text-lg leading-relaxed text-foreground">
             {paras.slice(0, mid).map((p, i) => <p key={i} className={i === 0 ? "whitespace-pre-line first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-6xl first-letter:font-extrabold first-letter:leading-none first-letter:text-navy" : "whitespace-pre-line"}>{p}</p>)}
-            {paras.length > 3 && <AdSlot format="inline" slot={import.meta.env.VITE_ADSENSE_SLOT_INLINE} className="py-2" />}
+            {paras.length > 3 && <AdSlot format="inline" slot={import.meta.env["VITE_ADSENSE_SLOT_INLINE"] as string | undefined} className="py-2" />}
             {paras.slice(mid).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}
           </div>
 
@@ -125,7 +125,7 @@ function Article() {
                 {related.length === 0 && <p className="py-4 text-sm text-muted-foreground">More stories coming soon.</p>}
               </div>
             </div>
-            <AdSlot format="rectangle" slot={import.meta.env.VITE_ADSENSE_SLOT_SIDE} />
+            <AdSlot format="rectangle" slot={import.meta.env["VITE_ADSENSE_SLOT_SIDE"] as string | undefined} />
           </div>
         </aside>
       </div>

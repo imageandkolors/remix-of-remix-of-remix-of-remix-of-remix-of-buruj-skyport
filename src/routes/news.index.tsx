@@ -62,7 +62,7 @@ function NewsPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <AdSlot format="leaderboard" slot={import.meta.env.VITE_ADSENSE_SLOT_TOP} />
+        <AdSlot format="leaderboard" slot={import.meta.env["VITE_ADSENSE_SLOT_TOP"] as string | undefined} />
 
         {/* Masthead */}
         <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b-4 border-navy pb-3">
@@ -111,7 +111,7 @@ function NewsPage() {
                     ))}
                   </ol>
                 </div>
-                <AdSlot format="rectangle" slot={import.meta.env.VITE_ADSENSE_SLOT_SIDE} />
+                <AdSlot format="rectangle" slot={import.meta.env["VITE_ADSENSE_SLOT_SIDE"] as string | undefined} />
               </aside>
             </section>
 
