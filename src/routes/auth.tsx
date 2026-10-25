@@ -36,19 +36,37 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { toast.error("Email or password is incorrect"); return; }
+    if (error) {
+      toast.error("Email or password is incorrect");
+      return;
+    }
     navigate({ to: redirect });
   }
 
   return (
     <section className="min-h-[calc(100vh-8rem)] bg-secondary px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-md rounded-lg border bg-card p-7 shadow-lg sm:p-9">
-        <div className="flex items-center gap-3"><img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded bg-white px-2 py-1" /><div><p className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground">Staff portal</p><h1 className="font-display text-2xl font-bold text-foreground">Sign in</h1></div></div>
+        <div className="flex items-center gap-3">
+          <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-16 w-auto rounded bg-white px-2 py-1" />
+          <div>
+            <p className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground">Staff portal</p>
+            <h1 className="font-display text-2xl font-bold text-foreground">Sign in</h1>
+          </div>
+        </div>
         <p className="mt-5 text-muted-foreground">Sign in with your approved staff or coach account.</p>
         <form onSubmit={signIn} className="mt-7 space-y-4">
-          <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div className="space-y-1.5"><Label htmlFor="password">Password</Label><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-          <Button type="submit" disabled={loading} className="w-full font-display font-bold uppercase"><LockKeyhole />{loading ? "Signing in…" : "Sign in"}</Button>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <Button type="submit" disabled={loading} className="w-full font-display font-bold uppercase">
+            <LockKeyhole />
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
         </form>
       </div>
     </section>
