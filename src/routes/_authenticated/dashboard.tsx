@@ -1,281 +1,232 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { CalendarDays, ClipboardList, LogOut, Search, UserCheck } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import logoAssetSrc from "@/assets/buruj-crest.jpeg";
-const logoAsset = { url: logoAssetSrc };
-import { getStaffDashboard, updateApplicationReview } from "@/lib/staff.functions";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Activity, ArrowUpRight, BarChart3, ClipboardList, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AccessRequestsPanel, ApplicationInsights, CvRequestsPanel } from "@/components/staff/StaffPanels";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [
-    { title: "Admissions Dashboard — Buruj Sports Academy" },
-    { name: "description", content: "Secure admissions review workspace for Buruj Sports Academy staff." },
-    { property: "og:title", content: "Admissions Dashboard — Buruj Sports Academy" },
-    { property: "og:description", content: "Secure admissions review workspace." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
-  component: Dashboard,
+  component: DashboardPage,
 });
 
-const STATUS_LABELS: Record<string, string> = {
-  submitted: "Submitted",
-  under_review: "Under review",
-  shortlisted: "Shortlisted",
-  accepted: "Accepted",
-  declined: "Declined",
+type Applicant = {
+  id: string;
+  status: string | null;
+  created_at: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  programme: string | null;
+  school: string | null;
+  email: string | null;
 };
 
-type Application = Awaited<ReturnType<typeof getStaffDashboard>>["applications"][number];
+type DashboardStats = {
+  total: number;
+  accepted: number;
+  pending: number;
+  declined: number;
+};
 
-function Dashboard() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const query = useQuery({ queryKey: ["staff-dashboard"], queryFn: () => getStaffDashboard() });
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [selected, setSelected] = useState<Application | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState("submitted");
-  const [reviewerId, setReviewerId] = useState("unassigned");
-  const [notes, setNotes] = useState("");
+type DashboardData = {
+  stats: DashboardStats;
+  recent: Applicant[];
+};
 
-  const applications = query.data?.applications ?? [];
-  const filtered = useMemo(() => applications.filter((item) => {
-    const term = search.toLowerCase().trim();
-    const matchesText = !term || [item.player_name, item.guardian_name, item.reference_number, item.programme].some((value) => value?.toLowerCase().includes(term));
-    return matchesText && (filter === "all" || item.status === filter);
-  }), [applications, filter, search]);
-  const canManage = query.data?.role === "admin" || query.data?.role === "owner";
+const DEFAULT_DATA: DashboardData = {
+  stats: { total: 0, accepted: 0, pending: 0, declined: 0 },
+  recent: [],
+};
 
-  function openApplication(application: Application) {
-    setSelected(application);
-    setStatus(application.status);
-    setReviewerId(application.reviewer_id ?? "unassigned");
-    setNotes(application.admin_notes ?? "");
-  }
+function DashboardPage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["staff-dashboard"],
+    queryFn: async (): Promise<DashboardData> => {
+      const { data: rows, error: dbError } = await supabase
+        .from("applicants")
+        .select("id, status, created_at, first_name, last_name, programme, school, email")
+        .order("created_at", { ascending: false })
+        .limit(12);
 
-  async function saveReview() {
-    if (!selected) return;
-    setSaving(true);
-    try {
-      const result = await updateApplicationReview({ data: {
-        applicationId: selected.id,
-        status: status as "submitted" | "under_review" | "shortlisted" | "accepted" | "declined",
-        reviewerId: reviewerId === "unassigned" ? null : reviewerId,
-        adminNotes: notes,
-      } });
-      await queryClient.invalidateQueries({ queryKey: ["staff-dashboard"] });
-      setSelected(result.application);
-      toast.success(result.notificationPending ? "Application updated; guardian email is awaiting sender setup" : "Application updated");
-    } catch {
-      toast.error("The application could not be updated");
-    } finally {
-      setSaving(false);
-    }
-  }
+      if (dbError) throw dbError;
 
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", search: { redirect: "/dashboard" }, replace: true });
-  }
+      const recent = (rows ?? []) as Applicant[];
+      const stats: DashboardStats = recent.reduce(
+        (acc, row) => {
+          acc.total += 1;
+          const status = (row.status ?? "pending").toLowerCase();
+          if (status === "accepted") acc.accepted += 1;
+          if (status === "declined") acc.declined += 1;
+          if (status === "pending") acc.pending += 1;
+          return acc;
+        },
+        { total: 0, accepted: 0, pending: 0, declined: 0 },
+      );
 
-  if (query.isLoading) return <div className="grid min-h-[70vh] place-items-center text-muted-foreground">Loading admissions workspace…</div>;
-  if (query.isError || !query.data) return <div className="mx-auto max-w-xl px-4 py-24 text-center"><h1 className="text-4xl font-extrabold uppercase text-navy">Staff access required</h1><p className="mt-3 text-muted-foreground">Please sign in with an approved staff account to open this dashboard.</p></div>;
+      return { stats, recent };
+    },
+  });
 
-  const submittedCount = applications.filter((item) => item.status === "submitted").length;
-  const activeCount = applications.filter((item) => ["under_review", "shortlisted"].includes(item.status)).length;
-  const assignedCount = applications.filter((item) => item.reviewer_id === query.data.userId).length;
+  const dashboard = data ?? DEFAULT_DATA;
 
   return (
-    <div className="min-h-screen bg-secondary">
-      <header className="border-b bg-navy text-navy-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-3 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="Buruj Sports Academy" className="h-11 w-auto rounded bg-white px-2 py-1 sm:h-12" />
-            <div>
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-navy-foreground/80">Staff workspace</p>
-              <p className="font-display text-lg font-extrabold uppercase sm:text-xl">Buruj Admin</p>
-            </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
+        <header className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Overview</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Admin dashboard</h1>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Badge className="bg-gold text-gold-foreground hover:bg-gold">{query.data.role}</Badge>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="secondary" size="sm" className="w-full justify-center sm:w-auto">
-                <Link to="/_authenticated/content">News CMS</Link>
-              </Button>
-              <Button asChild variant="secondary" size="sm" className="w-full justify-center sm:w-auto">
-                <Link to="/_authenticated/settings">Site settings</Link>
-              </Button>
-              <Button onClick={signOut} variant="outline" size="sm" className="w-full justify-center border-navy-foreground/40 bg-transparent text-navy-foreground hover:bg-navy-foreground/10 sm:w-auto">
-                <LogOut className="h-4 w-4" /> Sign out
-              </Button>
-            </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm">
+            <Activity className="h-3.5 w-3.5 text-emerald-500" />
+            Live intake data
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:py-10">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <Metric icon={ClipboardList} label="New submissions" value={submittedCount} />
-          <Metric icon={CalendarDays} label="In review" value={activeCount} />
-          <Metric icon={UserCheck} label="Assigned to you" value={assignedCount} />
-        </div>
-
-        <section className="mt-6 rounded-lg border bg-card shadow-sm">
-          <div className="flex flex-col gap-4 border-b p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-extrabold uppercase text-navy sm:text-3xl">Applications</h2>
-              <p className="text-sm text-muted-foreground">{canManage ? "Assign reviewers and manage decisions." : "Review your assigned applications."}</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search applicant…" className="pl-9 sm:w-56" />
-              </div>
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {Object.entries(STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+            {error.message || "Unable to load the dashboard."}
           </div>
+        ) : null}
 
-          <div className="overflow-x-auto">
-            <Table className="min-w-[760px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Programme</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((application) => (
-                  <TableRow key={application.id}>
-                    <TableCell className="font-mono text-xs font-semibold">{application.reference_number}</TableCell>
-                    <TableCell>
-                      <p className="font-medium text-foreground">{application.player_name}</p>
-                      <p className="text-xs text-muted-foreground">{application.guardian_name}</p>
-                    </TableCell>
-                    <TableCell>{application.programme}</TableCell>
-                    <TableCell><StatusBadge status={application.status} /></TableCell>
-                    <TableCell>{new Date(application.submitted_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</TableCell>
-                    <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => openApplication(application)}>View</Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {filtered.length === 0 && <p className="p-10 text-center text-muted-foreground">No applications match this view.</p>}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric icon={ClipboardList} label="Total applicants" value={dashboard.stats.total} accent="text-blue-500" />
+          <Metric icon={TrendingUp} label="Accepted" value={dashboard.stats.accepted} accent="text-emerald-500" />
+          <Metric icon={BarChart3} label="Pending review" value={dashboard.stats.pending} accent="text-amber-500" />
+          <Metric icon={ArrowUpRight} label="Declined" value={dashboard.stats.declined} accent="text-rose-500" />
         </section>
 
-        {canManage && <AccessRequestsPanel />}
-        <CvRequestsPanel />
-      </main>
+        <section className="mt-6 grid gap-6 xl:grid-cols-[1.7fr_1fr]">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Recent activity</p>
+                <h2 className="text-lg font-semibold">Latest applications</h2>
+              </div>
+            </div>
 
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-h-[90vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto p-4 sm:p-6">
-          {selected && <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl font-extrabold uppercase text-navy sm:text-3xl">{selected.player_name}</DialogTitle>
-              <DialogDescription>{selected.reference_number}</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <h3 className="font-display text-lg font-bold uppercase text-primary">Player & guardian</h3>
-                <Detail label="Date of birth" value={selected.date_of_birth} />
-                <Detail label="Position" value={selected.position} />
-                <Detail label="Guardian" value={selected.guardian_name} />
-                <Detail label="Contact" value={selected.guardian_phone ?? selected.guardian_email ?? null} />
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="border-b border-border px-3 py-3 font-medium">Applicant</th>
+                    <th className="border-b border-border px-3 py-3 font-medium">Programme</th>
+                    <th className="border-b border-border px-3 py-3 font-medium">School</th>
+                    <th className="border-b border-border px-3 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
+                        Loading dashboard…
+                      </td>
+                    </tr>
+                  ) : dashboard.recent.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
+                        No records found yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    dashboard.recent.map((applicant) => {
+                      const fullName = [applicant.first_name, applicant.last_name].filter(Boolean).join(" ") || "Unknown applicant";
+                      const status = (applicant.status ?? "pending").toLowerCase();
+
+                      return (
+                        <tr key={applicant.id} className="align-top">
+                          <td className="border-b border-border px-3 py-3">
+                            <div className="font-medium text-foreground">{fullName}</div>
+                            <div className="text-xs text-muted-foreground">{applicant.email || "No email"}</div>
+                          </td>
+                          <td className="border-b border-border px-3 py-3 text-foreground">{applicant.programme || "—"}</td>
+                          <td className="border-b border-border px-3 py-3 text-foreground">{applicant.school || "—"}</td>
+                          <td className="border-b border-border px-3 py-3">
+                            <StatusBadge status={status} />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <p className="text-sm font-medium text-muted-foreground">Quick summary</p>
+            <h2 className="mt-1 text-lg font-semibold">Operational snapshot</h2>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Conversion</p>
+                <p className="mt-2 text-2xl font-bold">
+                  {dashboard.stats.total > 0
+                    ? `${Math.max(0, Math.round((dashboard.stats.accepted / dashboard.stats.total) * 100))}%`
+                    : "0%"}
+                </p>
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold uppercase text-primary">Application</h3>
-                <Detail label="Programme" value={selected.programme} />
-                <Detail label="Motivation" value={selected.motivation} />
-                <Detail label="Medical notes" value={selected.medical_notes} />
+
+              <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Action needed</p>
+                <p className="mt-2 text-lg font-semibold text-amber-600 dark:text-amber-400">
+                  {dashboard.stats.pending} applications waiting
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Latest update</p>
+                <p className="mt-2 text-sm text-foreground">
+                  {dashboard.recent[0]?.created_at
+                    ? new Date(dashboard.recent[0].created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : "No recent activity"}
+                </p>
               </div>
             </div>
-            <ApplicationInsights key={selected.id} applicationId={selected.id} saved={selected.ai_assessment} savedAt={selected.ai_assessed_at} />
-            <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus} disabled={!canManage}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Assigned reviewer</Label>
-                <Select value={reviewerId} onValueChange={setReviewerId} disabled={!canManage}>
-                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    <SelectItem value={query.data.userId}>Assigned to you</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="review-notes">Internal review notes</Label>
-                <Textarea id="review-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} />
-              </div>
-            </div>
-            {canManage && (
-              <div className="mt-5 flex justify-end">
-                <Button onClick={saveReview} disabled={saving} className="font-display font-bold uppercase">
-                  {saving ? "Saving…" : "Save review"}
-                </Button>
-              </div>
-            )}
-          </>}
-        </DialogContent>
-      </Dialog>
+          </aside>
+        </section>
+      </div>
     </div>
   );
 }
 
-function Metric({ icon: Icon, label, value }: { icon: typeof ClipboardList; label: string; value: number }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: typeof ClipboardList;
+  label: string;
+  value: number;
+  accent: string;
+}) {
   return (
-    <Card className="rounded-lg shadow-sm">
-      <CardContent className="flex items-center justify-between gap-4 p-4 sm:p-5">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1 text-3xl font-extrabold text-navy">{value}</p>
-        </div>
-        <div className="rounded-full bg-primary/10 p-2.5 text-primary">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className={`rounded-xl bg-muted p-2.5 ${accent}`}>
           <Icon className="h-5 w-5" />
         </div>
-      </CardContent>
-    </Card>
+        <span className="text-2xl font-bold">{value}</span>
+      </div>
+      <p className="mt-4 text-sm text-muted-foreground">{label}</p>
+    </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const variant = status === "declined" ? "destructive" : status === "accepted" ? "default" : "secondary";
-  return <Badge variant={variant}>{STATUS_LABELS[status] ?? status}</Badge>;
+  const palette =
+    status === "declined"
+      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+      : status === "accepted"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300";
+
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${palette}`}>
+      {status}
+    </span>
+  );
 }
 
-function Detail({ label, value }: { label: string; value: string | null }) {
-  return <div className="mt-3"><p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p><p className="whitespace-pre-wrap text-sm text-foreground">{value || "—"}</p></div>;
-}
