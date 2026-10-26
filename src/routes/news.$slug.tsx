@@ -51,7 +51,7 @@ export const Route = createFileRoute("/news/$slug")({
       ],
     };
   },
-  notFoundComponent: () => <div className="mx-auto max-w-xl px-4 py-24 text-center"><h1 className="text-4xl font-extrabold uppercase text-navy">Article not found</h1><Button asChild className="mt-6"><Link to="/news">All news</Link></Button></div>,
+  notFoundComponent: () => <div className="mx-auto max-w-xl px-4 py-24 text-center"><h1 className="text-4xl font-extrabold uppercase text-navy">Article not found</h1><p className="mt-3 text-muted-foreground">This story is no longer available.</p><Button asChild className="mt-6"><Link to="/news">Back to news</Link></Button></div>,
   errorComponent: () => <p className="p-16 text-center text-muted-foreground">Could not load this article. Please refresh.</p>,
   component: Article,
 });
@@ -69,21 +69,21 @@ function Article() {
   const mid = Math.min(3, paras.length);
 
   return (
-    <article className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <article className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6">
       <AdSlot format="leaderboard" slot={import.meta.env["VITE_ADSENSE_SLOT_TOP"] as string | undefined} />
-      <nav aria-label="Breadcrumb" className="mt-6 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="mt-6 flex min-w-0 flex-wrap items-center gap-1 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-primary">Home</Link><ChevronRight className="h-3 w-3 shrink-0" />
         <Link to="/news" className="hover:text-primary">News</Link><ChevronRight className="h-3 w-3 shrink-0" />
         <span className="truncate text-foreground">{a.category}</span>
       </nav>
 
-      <div className="mt-4 grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-10">
         <div className="min-w-0">
           <header>
-            <span className="inline-block rounded bg-navy px-2 py-0.5 font-display text-xs font-bold uppercase tracking-widest text-navy-foreground">{a.category}</span>
-            <h1 className="mt-3 text-4xl font-extrabold uppercase leading-[0.95] text-navy sm:text-6xl">{a.title}</h1>
-            {a.excerpt && <p className="mt-4 text-xl leading-snug text-muted-foreground">{a.excerpt}</p>}
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y py-3">
+            <span className="inline-block rounded bg-navy px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-widest text-navy-foreground">{a.category}</span>
+            <h1 className="mt-3 text-3xl font-extrabold uppercase leading-[0.96] text-navy sm:text-5xl lg:text-6xl">{a.title}</h1>
+            {a.excerpt && <p className="mt-4 text-base leading-snug text-muted-foreground sm:text-xl">{a.excerpt}</p>}
+            <div className="mt-5 flex flex-col gap-3 border-y py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 By <b className="text-foreground">{a.author || "Buruj Media Team"}</b> · <time dateTime={a.published_at ?? undefined}>{fmtNewsDate(a.published_at)}</time>
                 <span className="ml-2 inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{readingMinutes(a.body)} min read</span>
@@ -99,13 +99,13 @@ function Article() {
             </figure>
           )}
 
-          <div className="mt-8 space-y-5 text-lg leading-relaxed text-foreground">
-            {paras.slice(0, mid).map((p, i) => <p key={i} className={i === 0 ? "whitespace-pre-line first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-6xl first-letter:font-extrabold first-letter:leading-none first-letter:text-navy" : "whitespace-pre-line"}>{p}</p>)}
+          <div className="mt-8 space-y-5 text-base leading-relaxed text-foreground sm:text-lg">
+            {paras.slice(0, mid).map((p, i) => <p key={i} className={i === 0 ? "whitespace-pre-line first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-5xl first-letter:font-bold first-letter:text-primary sm:first-letter:text-6xl" : "whitespace-pre-line"}>{p}</p>)}
             {paras.length > 3 && <AdSlot format="inline" slot={import.meta.env["VITE_ADSENSE_SLOT_INLINE"] as string | undefined} className="py-2" />}
             {paras.slice(mid).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}
           </div>
 
-          <div className="mt-10 rounded-lg border bg-secondary p-5">
+          <div className="mt-10 rounded-lg border bg-secondary p-4 sm:p-5">
             <p className="font-display text-lg font-bold uppercase text-navy">Share this story</p>
             <ShareBar url={url} title={a.title} className="mt-3" />
           </div>
@@ -119,7 +119,7 @@ function Article() {
                 {related.map((n) => (
                   <Link key={n.id} to="/news/$slug" params={{ slug: n.slug }} className="group flex gap-3 py-4">
                     <div className="h-16 w-24 shrink-0 overflow-hidden rounded"><NewsCover src={n.cover_url} title={n.title} /></div>
-                    <div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">{n.category} · {fmtNewsDate(n.published_at)}</p><p className="font-display font-bold uppercase leading-tight text-navy group-hover:text-primary">{n.title}</p></div>
+                    <div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">{n.category} · {fmtNewsDate(n.published_at)}</p><p className="mt-1 font-display font-bold uppercase leading-tight text-navy group-hover:text-primary">{n.title}</p></div>
                   </Link>
                 ))}
                 {related.length === 0 && <p className="py-4 text-sm text-muted-foreground">More stories coming soon.</p>}
@@ -133,9 +133,9 @@ function Article() {
       {more.length > 0 && (
         <section className="mt-14">
           <h2 className="border-b-4 border-navy pb-2 font-display text-2xl font-extrabold uppercase text-navy">More from Buruj News</h2>
-          <div className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {more.map((n) => (
-              <Link key={n.id} to="/news/$slug" params={{ slug: n.slug }} className="group">
+              <Link key={n.id} to="/news/$slug" params={{ slug: n.slug }} className="group block">
                 <div className="aspect-video overflow-hidden rounded"><NewsCover src={n.cover_url} title={n.title} className="transition-transform group-hover:scale-105" /></div>
                 <p className="mt-3 text-xs font-bold uppercase tracking-wider text-primary">{n.category}</p>
                 <h3 className="mt-1 font-display text-lg font-bold uppercase leading-tight text-navy group-hover:text-primary">{n.title}</h3>
