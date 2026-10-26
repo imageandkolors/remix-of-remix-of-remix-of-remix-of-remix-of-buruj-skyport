@@ -1,490 +1,370 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { deleteNews, listContentAdmin, saveNews, type NewsItem } from "@/lib/content.functions";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+
+type BlogPostDraft = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  status: "draft" | "published";
+  coverImage: string;
+  publishedAt: string;
+  seoTitle: string;
+  seoDescription: string;
+  keywords: string;
+  author: string;
+  category: string;
+};
+
+const initialDrafts: BlogPostDraft[] = [
+  {
+    id: "1",
+    title: "How Buruj Skyport is redefining student admissions and digital visibility",
+    slug: "buruj-skyport-student-admissions-digital-visibility",
+    excerpt:
+      "Modern institutions need strong digital storytelling, search visibility, and publication workflows that work across mobile and desktop.",
+    status: "published",
+    coverImage:
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
+    publishedAt: "2026-10-18",
+    seoTitle: "Buruj Skyport admissions and digital media strategy",
+    seoDescription:
+      "A modern admissions and news publishing workflow designed to improve SEO visibility and engagement across devices.",
+    keywords: "admissions, news, SEO, digital publishing, Buruj Skyport",
+    author: "Editorial Team",
+    category: "School News",
+  },
+  {
+    id: "2",
+    title: "Why structured news metadata matters for rankings and social sharing",
+    slug: "structured-news-metadata-rankings-social-sharing",
+    excerpt:
+      "Search engines and social platforms reward clear metadata, consistent thumbnails, and accessible article structures.",
+    status: "published",
+    coverImage:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
+    publishedAt: "2026-10-12",
+    seoTitle: "Structured metadata in news publishing and SEO",
+    seoDescription:
+      "Learn how metadata, article summaries, and clean page structure improve social previews and search visibility.",
+    keywords: "SEO, metadata, open graph, social sharing, blog strategy",
+    author: "Content Team",
+    category: "SEO",
+  },
+  {
+    id: "3",
+    title: "Designing a responsive school blog experience for mobile, tablet and desktop",
+    slug: "responsive-school-blog-mobile-tablet-desktop",
+    excerpt:
+      "A clearer layout system makes editorial content easier to read, improve conversion, and maintain a polished newsroom experience.",
+    status: "draft",
+    coverImage:
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+    publishedAt: "2026-10-05",
+    seoTitle: "Responsive school blog design for mobile and tablet",
+    seoDescription:
+      "Responsive layouts, content hierarchy, and optimized spacing for a polished school blog experience on every device.",
+    keywords: "responsive blog, school website, mobile layout, tablet layout, content design",
+    author: "Creative Team",
+    category: "Design",
+  },
+];
 
 export const Route = createFileRoute("/_authenticated/content")({
-  head: () => ({ meta: [
-    { title: "Content Manager — Buruj Sports Academy" },
-    { name: "description", content: "Admin workspace for news articles." },
-    { property: "og:title", content: "Content Manager — Buruj Sports Academy" },
-    { property: "og:description", content: "Manage news articles." },
-    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
-  ] }),
-  component: ContentManager,
+  component: ContentAdminPage,
 });
 
-function ImagePick({ folder, url, onPath }: { folder: "news" | "social"; url: string | null; onPath: (p: string | null, preview: string | null) => void }) {
-  const [busy, setBusy] = useState(false);
+function ContentAdminPage() {
+  const [posts, setPosts] = useState<BlogPostDraft[]>(initialDrafts);
+  const [selectedId, setSelectedId] = useState(initialDrafts[0]?.id ?? "");
 
-  async function up(f: File) {
-    if (!f.type.startsWith("image/")) { toast.error("Choose an image file"); return; }
-    setBusy(true);
-    const path = `${folder}/${crypto.randomUUID()}-${f.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-60)}`;
-    const { error } = await supabase.storage.from("site-media").upload(path, f, { contentType: f.type });
-    setBusy(false);
-    if (error) { toast.error("Upload failed"); return; }
-    onPath(path, URL.createObjectURL(f));
-  }
+  const selectedPost = useMemo(
+    () => posts.find((post) => post.id === selectedId) ?? posts[0],
+    [posts, selectedId],
+  );
+
+  const updateSelectedPost = <K extends keyof BlogPostDraft>(key: K, value: BlogPostDraft[K]) => {
+    if (!selectedPost) return;
+
+    setPosts((current) =>
+      current.map((post) => (post.id === selectedPost.id ? { ...post, [key]: value } : post)),
+    );
+  };
+
+  const publishedCount = posts.filter((post) => post.status === "published").length;
+  const draftCount = posts.filter((post) => post.status === "draft").length;
 
   return (
-    <div className="space-y-2">
-      {url && <img src={url} alt="" className="h-32 w-full rounded object-cover" />}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button asChild size="sm" variant="outline" disabled={busy} className="w-full sm:w-auto">
-          <label className="flex cursor-pointer items-center justify-center gap-2">
-            <Upload className="h-4 w-4" />
-            {busy ? "Uploading…" : url ? "Replace image" : "Upload image"}
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && up(e.target.files[0])} />
-          </label>
-        </Button>
-        {url && <Button size="sm" variant="ghost" onClick={() => onPath(null, null)} className="w-full sm:w-auto"><Trash2 className="h-4 w-4" />Remove</Button>}
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-5 lg:px-8 lg:py-8">
+        <header className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Content management</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">News & blog admin</h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+              {publishedCount} published
+            </span>
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+              {draftCount} drafts
+            </span>
+          </div>
+        </header>
+
+        <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <AdminStatCard label="SEO ready" value="WP-style" tone="emerald" />
+          <AdminStatCard label="Social preview" value="OG + Twitter" tone="blue" />
+          <AdminStatCard label="Content health" value="Responsive" tone="violet" />
+        </section>
+
+        <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">Posts</h2>
+              <button
+                type="button"
+                className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
+                onClick={() => {
+                  const newPost: BlogPostDraft = {
+                    id: `${Date.now()}`,
+                    title: "New article",
+                    slug: `new-article-${Date.now()}`,
+                    excerpt: "Write a concise article summary here.",
+                    status: "draft",
+                    coverImage:
+                      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
+                    publishedAt: new Date().toISOString(),
+                    seoTitle: "New article title",
+                    seoDescription: "Write a search-friendly summary for this article.",
+                    keywords: "news, school, admissions",
+                    author: "Admin",
+                    category: "News",
+                  };
+
+                  setPosts((current) => [newPost, ...current]);
+                  setSelectedId(newPost.id);
+                }}
+              >
+                + New post
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {posts.map((post) => (
+                <button
+                  key={post.id}
+                  type="button"
+                  onClick={() => setSelectedId(post.id)}
+                  className={`w-full rounded-xl border p-3 text-left transition ${
+                    selectedPost?.id === post.id
+                      ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="line-clamp-2 text-sm font-semibold">{post.title}</p>
+                      <p className={`mt-1 text-[11px] ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-500"}`}>
+                        {post.category}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        post.status === "published"
+                          ? selectedPost?.id === post.id
+                            ? "bg-emerald-500/20 text-emerald-200"
+                            : "bg-emerald-100 text-emerald-700"
+                          : selectedPost?.id === post.id
+                            ? "bg-amber-500/20 text-amber-200"
+                            : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {post.status}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <main className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+            {selectedPost ? (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Editing</p>
+                    <h2 className="mt-1 text-xl font-bold sm:text-2xl">{selectedPost.title}</h2>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedPost("status", "draft")}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Save as draft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedPost("status", "published")}
+                      className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500"
+                    >
+                      Publish article
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Article title
+                    <input
+                      value={selectedPost.title}
+                      onChange={(event) => updateSelectedPost("title", event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700">
+                    Category
+                    <input
+                      value={selectedPost.category}
+                      onChange={(event) => updateSelectedPost("category", event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Slug
+                    <input
+                      value={selectedPost.slug}
+                      onChange={(event) => updateSelectedPost("slug", event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700">
+                    Author
+                    <input
+                      value={selectedPost.author}
+                      onChange={(event) => updateSelectedPost("author", event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+                </div>
+
+                <label className="block text-sm font-medium text-slate-700">
+                  Thumbnail image URL
+                  <input
+                    value={selectedPost.coverImage}
+                    onChange={(event) => updateSelectedPost("coverImage", event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                  />
+                </label>
+
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <img
+                    src={selectedPost.coverImage}
+                    alt={selectedPost.title}
+                    className="h-48 w-full object-cover sm:h-56 lg:h-64"
+                  />
+                </div>
+
+                <label className="block text-sm font-medium text-slate-700">
+                  Short summary
+                  <textarea
+                    value={selectedPost.excerpt}
+                    onChange={(event) => updateSelectedPost("excerpt", event.target.value)}
+                    rows={4}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                  />
+                </label>
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    SEO title
+                    <input
+                      value={selectedPost.seoTitle}
+                      onChange={(event) => updateSelectedPost("seoTitle", event.target.value)}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700">
+                    Published date
+                    <input
+                      type="date"
+                      value={selectedPost.publishedAt.slice(0, 10)}
+                      onChange={(event) => updateSelectedPost("publishedAt", new Date(`${event.target.value}T00:00:00`).toISOString())}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                    />
+                  </label>
+                </div>
+
+                <label className="block text-sm font-medium text-slate-700">
+                  Meta description
+                  <textarea
+                    value={selectedPost.seoDescription}
+                    onChange={(event) => updateSelectedPost("seoDescription", event.target.value)}
+                    rows={3}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-slate-700">
+                  Keywords
+                  <input
+                    value={selectedPost.keywords}
+                    onChange={(event) => updateSelectedPost("keywords", event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                  />
+                </label>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Preview for social sharing</p>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <img src={selectedPost.coverImage} alt={selectedPost.title} className="h-36 w-full object-cover" />
+                    <div className="space-y-1 p-3">
+                      <p className="text-sm font-semibold text-slate-900">{selectedPost.seoTitle}</p>
+                      <p className="text-xs text-slate-600">{selectedPost.seoDescription}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-slate-500">
+                Select or create a post to continue.
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );
 }
 
-function getPublishStatus(item: Pick<NewsItem, "published" | "is_featured" | "published_at">) {
-  if (!item.published && item.published_at) return "Scheduled";
-  if (!item.published) return "Draft";
-  if (item.is_featured) return "Featured";
-  return "Published";
-}
-
-function getStatusClasses(status: string) {
-  switch (status) {
-    case "Featured":
-      return "bg-gold text-gold-foreground";
-    case "Published":
-      return "bg-emerald-100 text-emerald-800";
-    case "Scheduled":
-      return "bg-sky-100 text-sky-800";
-    default:
-      return "bg-stone-200 text-stone-700";
-  }
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getSeoScore(article: Partial<NewsItem>) {
-  const title = (article.meta_title || article.title || "").trim();
-  const description = (article.meta_description || article.excerpt || "").trim();
-  const hasImage = Boolean(article.cover_path || article.social_image_path);
-  const hasCanonical = Boolean(article.canonical_url?.trim());
-  const hasAuthor = Boolean(article.author || article.seo_author);
-  const hasBody = Boolean((article.body || "").trim());
-
-  let score = 0;
-  score += title.length >= 45 && title.length <= 60 ? 28 : title.length > 0 ? 16 : 0;
-  score += description.length >= 120 && description.length <= 160 ? 27 : description.length > 0 ? 14 : 0;
-  score += hasImage ? 14 : 0;
-  score += hasCanonical ? 10 : 0;
-  score += hasAuthor ? 11 : 0;
-  score += hasBody ? 10 : 0;
-  return clamp(score, 0, 100);
-}
-
-function getContentQuality(article: Partial<NewsItem>) {
-  const body = article.body || "";
-  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
-  const paragraphCount = body.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length;
-  const sentences = body.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-  const avgSentenceLength = sentences.length ? sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).filter(Boolean).length, 0) / sentences.length : 0;
-
-  let score = 0;
-  if (wordCount >= 350) score += 35;
-  else if (wordCount >= 180) score += 25;
-  else if (wordCount >= 80) score += 15;
-
-  if (paragraphCount >= 3) score += 25;
-  else if (paragraphCount >= 2) score += 15;
-  else if (paragraphCount >= 1) score += 8;
-
-  if (avgSentenceLength >= 12 && avgSentenceLength <= 22) score += 20;
-  else if (avgSentenceLength > 0) score += 10;
-
-  if ((article.title || "").trim().length >= 45) score += 10;
-  if ((article.excerpt || "").trim().length >= 120) score += 10;
-
-  return clamp(score, 0, 100);
-}
-
-function getChecklist(article: Partial<NewsItem>) {
-  const title = (article.meta_title || article.title || "").trim();
-  const description = (article.meta_description || article.excerpt || "").trim();
-  const body = (article.body || "").trim();
-  const hasCanonical = Boolean(article.canonical_url?.trim());
-  const hasImage = Boolean(article.cover_path || article.social_image_path);
-  const hasAuthor = Boolean(article.author || article.seo_author);
-
-  const checks = [
-    {
-      label: "Title is optimized",
-      ok: title.length >= 45 && title.length <= 60,
-      detail: `${title.length}/60 characters`,
-    },
-    {
-      label: "Meta description is strong",
-      ok: description.length >= 120 && description.length <= 160,
-      detail: `${description.length}/160 characters`,
-    },
-    {
-      label: "Story has enough content",
-      ok: body.split(/\s+/).filter(Boolean).length >= 180,
-      detail: `${body.split(/\s+/).filter(Boolean).length} words`,
-    },
-    {
-      label: "Article has a social image",
-      ok: hasImage,
-      detail: hasImage ? "Image ready" : "Add cover or social image",
-    },
-    {
-      label: "Canonical URL is set",
-      ok: hasCanonical,
-      detail: hasCanonical ? "URL ready" : "Add canonical URL",
-    },
-    {
-      label: "Author is identified",
-      ok: hasAuthor,
-      detail: hasAuthor ? "Author provided" : "Add author name",
-    },
-  ];
-
-  const score = checks.filter((item) => item.ok).length * 100 / checks.length;
-  return { checks, score: clamp(Math.round(score), 0, 100) };
-}
-
-function newArticleDraft(): NewsItem {
-  return {
-    id: "",
-    slug: "",
-    title: "",
-    excerpt: "",
-    body: "",
-    category: "Academy",
-    author: "",
-    is_featured: false,
-    published: true,
-    published_at: null,
-    cover_path: null,
-    cover_url: null,
-    meta_title: "",
-    meta_description: "",
-    canonical_url: "",
-    social_image_path: null,
-    social_image_url: null,
-    seo_author: "",
-    article_section: "",
-    schema_publisher: "Buruj Sports Academy",
+function AdminStatCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "emerald" | "blue" | "violet";
+}) {
+  const tones = {
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    blue: "border-sky-200 bg-sky-50 text-sky-700",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
   };
-}
-
-function ContentManager() {
-  const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["admin-content"], queryFn: () => listContentAdmin() });
-  const [art, setArt] = useState<NewsItem | null>(null);
-  const [busy, setBusy] = useState(false);
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["admin-content"] }); qc.invalidateQueries({ queryKey: ["news"] }); };
-
-  async function submitArt() {
-    if (!art) return;
-    setBusy(true);
-    try {
-      await saveNews({ data: {
-        id: art.id || undefined,
-        title: art.title,
-        slug: art.slug || undefined,
-        excerpt: art.excerpt,
-        body: art.body,
-        category: art.category,
-        author: art.author,
-        cover_path: art.cover_path,
-        social_image_path: art.social_image_path,
-        is_featured: art.is_featured,
-        published: art.published,
-        published_at: art.published_at,
-        meta_title: art.meta_title,
-        meta_description: art.meta_description,
-        canonical_url: art.canonical_url,
-        seo_author: art.seo_author,
-        article_section: art.article_section,
-        schema_publisher: art.schema_publisher,
-      } });
-      toast.success("Story saved");
-      setArt(null);
-      refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const listCards = useMemo(() => q.data?.news ?? [], [q.data?.news]);
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-10">
-      <Link to="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" />Dashboard</Link>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Blog & news</p>
-          <h1 className="mt-1 text-3xl font-extrabold uppercase text-navy sm:text-4xl">Content</h1>
-        </div>
-        <Button onClick={() => setArt(newArticleDraft())} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4" /> New story
-        </Button>
-      </div>
-
-      {q.isLoading && <p className="mt-6 text-muted-foreground">Loading…</p>}
-      {q.error && <p className="mt-6 text-destructive">{(q.error as Error).message}</p>}
-
-      <section className="mt-8 rounded-xl border bg-card shadow-sm">
-        <div className="flex flex-col gap-2 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-bold uppercase text-navy">News articles</h2>
-          <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">{listCards.length} total</span>
-        </div>
-
-        <div className="space-y-3 p-4">
-          {listCards.map((n) => {
-            const status = getPublishStatus(n);
-            const seoScore = getSeoScore(n);
-            const contentScore = getContentQuality(n);
-            const articleTitle = n.meta_title || n.title || "Untitled article";
-            const articleDescription = n.meta_description || n.excerpt || "No description yet";
-            return (
-              <div key={n.id} className="flex flex-col gap-4 rounded-lg border bg-background/60 p-3 sm:flex-row sm:items-center">
-                <div className="h-20 w-full shrink-0 overflow-hidden rounded bg-navy sm:h-16 sm:w-24">{n.cover_url && <img src={n.cover_url} alt="" className="h-full w-full object-cover" />}</div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{n.category}</span>
-                    <span className={`rounded px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${getStatusClasses(status)}`}>{status}</span>
-                    {n.is_featured && <span className="rounded bg-gold px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gold-foreground">Featured</span>}
-                  </div>
-                  <p className="mt-2 truncate font-semibold text-navy">{n.title || "Untitled article"}</p>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{articleDescription}</p>
-                </div>
-
-                <div className="w-full sm:max-w-[220px]">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                      <span>SEO</span>
-                      <span>{seoScore}/100</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-orange-500" style={{ width: `${seoScore}%` }} />
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                      <span>Quality</span>
-                      <span>{contentScore}/100</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500" style={{ width: `${contentScore}%` }} />
-                    </div>
-                  </div>
-                  <div className="mt-2 text-[10px] text-muted-foreground">
-                    {articleTitle.length}/60 title · {articleDescription.length}/160 desc
-                  </div>
-                </div>
-
-                <div className="flex gap-2 sm:ml-auto">
-                  <Button size="sm" variant="outline" onClick={() => setArt(n)} className="flex-1 sm:flex-none">Edit</Button>
-                  <Button size="sm" variant="ghost" aria-label="Delete" onClick={async () => { if (confirm(`Delete "${n.title}"?`)) { await deleteNews({ data: { id: n.id } }); refresh(); } }} className="flex-1 sm:flex-none"><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <Dialog open={!!art} onOpenChange={(o) => !o && setArt(null)}>
-        <DialogContent className="max-h-[90vh] w-[calc(100%-1rem)] max-w-7xl overflow-y-auto p-4 sm:p-6">
-          <DialogHeader><DialogTitle>{art?.id ? "Edit article" : "New article"}</DialogTitle></DialogHeader>
-          {art && (() => {
-            const status = getPublishStatus(art);
-            const seoScore = getSeoScore(art);
-            const contentScore = getContentQuality(art);
-            const checklist = getChecklist(art);
-            const titleValue = art.meta_title || art.title || "Untitled article";
-            const descriptionValue = art.meta_description || art.excerpt || "Add a meta description for better visibility.";
-            const previewImage = art.social_image_url || art.cover_url;
-
-            return (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)]">
-                <div className="space-y-4">
-                  <div className="rounded-lg border bg-background p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{art.category || "Academy"}</span>
-                      <span className={`rounded px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${getStatusClasses(status)}`}>{status}</span>
-                      {art.is_featured && <span className="rounded bg-gold px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-gold-foreground">Featured</span>}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Headline</Label>
-                    <Input value={art.title} onChange={(e) => setArt({ ...art, title: e.target.value })} />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label>Category</Label>
-                      <Input list="news-cats" value={art.category} onChange={(e) => setArt({ ...art, category: e.target.value })} />
-                      <datalist id="news-cats"><option value="Academy" /><option value="Matchday" /><option value="Trials" /><option value="Community" /></datalist>
-                    </div>
-                    <div>
-                      <Label>Author</Label>
-                      <Input value={art.author ?? ""} onChange={(e) => setArt({ ...art, author: e.target.value })} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Cover picture</Label>
-                    <ImagePick folder="news" url={art.cover_url} onPath={(p, u) => setArt({ ...art, cover_path: p, cover_url: u })} />
-                  </div>
-
-                  <div>
-                    <Label>Summary</Label>
-                    <Textarea rows={2} value={art.excerpt ?? ""} onChange={(e) => setArt({ ...art, excerpt: e.target.value })} />
-                  </div>
-
-                  <div>
-                    <Label>Story</Label>
-                    <Textarea rows={10} value={art.body ?? ""} onChange={(e) => setArt({ ...art, body: e.target.value })} />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label>Publish date</Label>
-                      <Input type="date" value={art.published_at?.slice(0, 10) ?? ""} onChange={(e) => setArt({ ...art, published_at: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-                    </div>
-                    <div className="flex flex-col justify-center gap-2 rounded-md border p-3">
-                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={art.published} onChange={(e) => setArt({ ...art, published: e.target.checked })} />Published</label>
-                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={art.is_featured} onChange={(e) => setArt({ ...art, is_featured: e.target.checked })} />Lead story on homepage</label>
-                    </div>
-                  </div>
-                </div>
-
-                <aside className="space-y-4 rounded-lg border bg-secondary/40 p-4">
-                  <div className="flex items-center justify-between gap-2 border-b pb-3">
-                    <div>
-                      <p className="font-display text-xl font-bold uppercase text-navy">SEO & quality</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Google + social checks</p>
-                    </div>
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Score {seoScore}</span>
-                  </div>
-
-                  <div className="space-y-3 rounded-md border bg-background p-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                      <span>SEO checklist</span>
-                      <span>{checklist.score}%</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${checklist.score}%` }} />
-                    </div>
-                    <div className="space-y-2">
-                      {checklist.checks.map((item) => (
-                        <div key={item.label} className="flex items-start gap-2 rounded border bg-secondary/30 p-2">
-                          <span className={`mt-0.5 inline-block h-2.5 w-2.5 rounded-full ${item.ok ? "bg-emerald-500" : "bg-red-500"}`} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-foreground">{item.label}</p>
-                            <p className={`text-[10px] uppercase tracking-[0.12em] ${item.ok ? "text-emerald-700" : "text-red-700"}`}>{item.ok ? "Good" : "Needs attention"}</p>
-                            <p className="mt-1 text-[10px] text-muted-foreground">{item.detail}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-md border bg-background p-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                      <span>Content quality</span>
-                      <span>{contentScore}/100</span>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-200">
-                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500" style={{ width: `${contentScore}%` }} />
-                    </div>
-                    <div className="mt-2 text-[10px] text-muted-foreground">
-                      {art.body ? `${(art.body.trim().split(/\s+/).filter(Boolean).length)} words` : "No body yet"} · {art.body ? `${(art.body.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length)} paragraphs` : "0 paragraphs"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Meta title</Label>
-                    <Input value={art.meta_title ?? ""} onChange={(e) => setArt({ ...art, meta_title: e.target.value })} placeholder={art.title || "Article title"} />
-                    <div className="mt-1 flex justify-between text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><span>Title length</span><span>{(art.meta_title || art.title || "").length}/60</span></div>
-                  </div>
-
-                  <div>
-                    <Label>Meta description</Label>
-                    <Textarea rows={3} value={art.meta_description ?? ""} onChange={(e) => setArt({ ...art, meta_description: e.target.value })} placeholder="Short excerpt used by Google and social previews" />
-                    <div className="mt-1 flex justify-between text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><span>Description length</span><span>{(art.meta_description || art.excerpt || "").length}/160</span></div>
-                  </div>
-
-                  <div>
-                    <Label>Canonical URL</Label>
-                    <Input value={art.canonical_url ?? ""} onChange={(e) => setArt({ ...art, canonical_url: e.target.value })} placeholder="https://example.com/news/your-story" />
-                  </div>
-
-                  <div>
-                    <Label>Social thumbnail</Label>
-                    <ImagePick folder="social" url={art.social_image_url} onPath={(p, u) => setArt({ ...art, social_image_path: p, social_image_url: u })} />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                    <div>
-                      <Label>SEO author</Label>
-                      <Input value={art.seo_author ?? ""} onChange={(e) => setArt({ ...art, seo_author: e.target.value })} placeholder={art.author || "Buruj Media Team"} />
-                    </div>
-                    <div>
-                      <Label>Article section</Label>
-                      <Input value={art.article_section ?? ""} onChange={(e) => setArt({ ...art, article_section: e.target.value })} placeholder={art.category || "Academy"} />
-                    </div>
-                    <div className="sm:col-span-2 xl:col-span-1">
-                      <Label>Schema publisher</Label>
-                      <Input value={art.schema_publisher ?? ""} onChange={(e) => setArt({ ...art, schema_publisher: e.target.value })} placeholder="Buruj Sports Academy" />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3">
-                    <div className="rounded-md border bg-background p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Google preview</p>
-                      <div className="mt-3 rounded-md border bg-white p-3 shadow-sm">
-                        <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">burujsportsacademy.com</div>
-                        <p className="mt-1 text-sm font-medium text-blue-700">{titleValue}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{descriptionValue}</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-md border bg-background p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Social preview</p>
-                      <div className="mt-3 overflow-hidden rounded-xl border bg-slate-950 text-white shadow-md">
-                        {previewImage ? <img src={previewImage} alt="" className="h-28 w-full object-cover" /> : <div className="flex h-28 items-center justify-center bg-slate-800 text-xs text-slate-300">No image</div>}
-                        <div className="p-3">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-slate-300">Buruj Sports Academy</p>
-                          <p className="mt-1 text-sm font-bold text-white">{titleValue}</p>
-                          <p className="mt-1 text-[11px] leading-relaxed text-slate-300">{descriptionValue}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button disabled={busy} onClick={submitArt} className="w-full">{busy ? "Saving…" : "Save article"}</Button>
-                </aside>
-              </div>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+    <div className={`rounded-2xl border p-4 ${tones[tone]}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em]">{label}</p>
+      <p className="mt-2 text-lg font-bold">{value}</p>
     </div>
   );
 }
