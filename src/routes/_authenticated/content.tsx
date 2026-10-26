@@ -72,6 +72,10 @@ function getStatusClasses(status: string) {
   }
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function getSeoScore(article: Partial<NewsItem>) {
   const title = (article.meta_title || article.title || "").trim();
   const description = (article.meta_description || article.excerpt || "").trim();
@@ -87,7 +91,77 @@ function getSeoScore(article: Partial<NewsItem>) {
   score += hasCanonical ? 10 : 0;
   score += hasAuthor ? 11 : 0;
   score += hasBody ? 10 : 0;
-  return Math.max(0, Math.min(100, score));
+  return clamp(score, 0, 100);
+}
+
+function getContentQuality(article: Partial<NewsItem>) {
+  const body = article.body || "";
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+  const paragraphCount = body.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length;
+  const sentences = body.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  const avgSentenceLength = sentences.length ? sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).filter(Boolean).length, 0) / sentences.length : 0;
+
+  let score = 0;
+  if (wordCount >= 350) score += 35;
+  else if (wordCount >= 180) score += 25;
+  else if (wordCount >= 80) score += 15;
+
+  if (paragraphCount >= 3) score += 25;
+  else if (paragraphCount >= 2) score += 15;
+  else if (paragraphCount >= 1) score += 8;
+
+  if (avgSentenceLength >= 12 && avgSentenceLength <= 22) score += 20;
+  else if (avgSentenceLength > 0) score += 10;
+
+  if ((article.title || "").trim().length >= 45) score += 10;
+  if ((article.excerpt || "").trim().length >= 120) score += 10;
+
+  return clamp(score, 0, 100);
+}
+
+function getChecklist(article: Partial<NewsItem>) {
+  const title = (article.meta_title || article.title || "").trim();
+  const description = (article.meta_description || article.excerpt || "").trim();
+  const body = (article.body || "").trim();
+  const hasCanonical = Boolean(article.canonical_url?.trim());
+  const hasImage = Boolean(article.cover_path || article.social_image_path);
+  const hasAuthor = Boolean(article.author || article.seo_author);
+
+  const checks = [
+    {
+      label: "Title is optimized",
+      ok: title.length >= 45 && title.length <= 60,
+      detail: `${title.length}/60 characters`,
+    },
+    {
+      label: "Meta description is strong",
+      ok: description.length >= 120 && description.length <= 160,
+      detail: `${description.length}/160 characters`,
+    },
+    {
+      label: "Story has enough content",
+      ok: body.split(/\s+/).filter(Boolean).length >= 180,
+      detail: `${body.split(/\s+/).filter(Boolean).length} words`,
+    },
+    {
+      label: "Article has a social image",
+      ok: hasImage,
+      detail: hasImage ? "Image ready" : "Add cover or social image",
+    },
+    {
+      label: "Canonical URL is set",
+      ok: hasCanonical,
+      detail: hasCanonical ? "URL ready" : "Add canonical URL",
+    },
+    {
+      label: "Author is identified",
+      ok: hasAuthor,
+      detail: hasAuthor ? "Author provided" : "Add author name",
+    },
+  ];
+
+  const score = checks.filter((item) => item.ok).length * 100 / checks.length;
+  return { checks, score: clamp(Math.round(score), 0, 100) };
 }
 
 function newArticleDraft(): NewsItem {
@@ -184,6 +258,7 @@ function ContentManager() {
           {listCards.map((n) => {
             const status = getPublishStatus(n);
             const seoScore = getSeoScore(n);
+            const contentScore = getContentQuality(n);
             const articleTitle = n.meta_title || n.title || "Untitled article";
             const articleDescription = n.meta_description || n.excerpt || "No description yet";
             return (
@@ -200,13 +275,22 @@ function ContentManager() {
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{articleDescription}</p>
                 </div>
 
-                <div className="w-full sm:max-w-[190px]">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    <span>SEO</span>
-                    <span>{seoScore}/100</span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-200">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-orange-500" style={{ width: `${seoScore}%` }} />
+                <div className="w-full sm:max-w-[220px]">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>SEO</span>
+                      <span>{seoScore}/100</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-orange-500" style={{ width: `${seoScore}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>Quality</span>
+                      <span>{contentScore}/100</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500" style={{ width: `${contentScore}%` }} />
+                    </div>
                   </div>
                   <div className="mt-2 text-[10px] text-muted-foreground">
                     {articleTitle.length}/60 title · {articleDescription.length}/160 desc
@@ -224,17 +308,19 @@ function ContentManager() {
       </section>
 
       <Dialog open={!!art} onOpenChange={(o) => !o && setArt(null)}>
-        <DialogContent className="max-h-[90vh] w-[calc(100%-1rem)] max-w-6xl overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="max-h-[90vh] w-[calc(100%-1rem)] max-w-7xl overflow-y-auto p-4 sm:p-6">
           <DialogHeader><DialogTitle>{art?.id ? "Edit article" : "New article"}</DialogTitle></DialogHeader>
           {art && (() => {
             const status = getPublishStatus(art);
             const seoScore = getSeoScore(art);
+            const contentScore = getContentQuality(art);
+            const checklist = getChecklist(art);
             const titleValue = art.meta_title || art.title || "Untitled article";
             const descriptionValue = art.meta_description || art.excerpt || "Add a meta description for better visibility.";
             const previewImage = art.social_image_url || art.cover_url;
 
             return (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)]">
                 <div className="space-y-4">
                   <div className="rounded-lg border bg-background p-4">
                     <div className="flex flex-wrap items-center gap-2">
@@ -291,10 +377,45 @@ function ContentManager() {
                 <aside className="space-y-4 rounded-lg border bg-secondary/40 p-4">
                   <div className="flex items-center justify-between gap-2 border-b pb-3">
                     <div>
-                      <p className="font-display text-xl font-bold uppercase text-navy">SEO settings</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Search and social optimization</p>
+                      <p className="font-display text-xl font-bold uppercase text-navy">SEO & quality</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Google + social checks</p>
                     </div>
                     <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Score {seoScore}</span>
+                  </div>
+
+                  <div className="space-y-3 rounded-md border bg-background p-3">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>SEO checklist</span>
+                      <span>{checklist.score}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${checklist.score}%` }} />
+                    </div>
+                    <div className="space-y-2">
+                      {checklist.checks.map((item) => (
+                        <div key={item.label} className="flex items-start gap-2 rounded border bg-secondary/30 p-2">
+                          <span className={`mt-0.5 inline-block h-2.5 w-2.5 rounded-full ${item.ok ? "bg-emerald-500" : "bg-red-500"}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                            <p className={`text-[10px] uppercase tracking-[0.12em] ${item.ok ? "text-emerald-700" : "text-red-700"}`}>{item.ok ? "Good" : "Needs attention"}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{item.detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border bg-background p-3">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>Content quality</span>
+                      <span>{contentScore}/100</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-200">
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500" style={{ width: `${contentScore}%` }} />
+                    </div>
+                    <div className="mt-2 text-[10px] text-muted-foreground">
+                      {art.body ? `${(art.body.trim().split(/\s+/).filter(Boolean).length)} words` : "No body yet"} · {art.body ? `${(art.body.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length)} paragraphs` : "0 paragraphs"}
+                    </div>
                   </div>
 
                   <div>
@@ -334,16 +455,26 @@ function ContentManager() {
                     </div>
                   </div>
 
-                  <div className="rounded-md border bg-background p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Preview</p>
-                    <div className="mt-3 overflow-hidden rounded-md border bg-card">
-                      {previewImage ? <img src={previewImage} alt="" className="h-24 w-full object-cover" /> : <div className="flex h-24 items-center justify-center bg-muted text-xs text-muted-foreground">No image</div>}
+                  <div className="grid gap-3">
+                    <div className="rounded-md border bg-background p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Google preview</p>
+                      <div className="mt-3 rounded-md border bg-white p-3 shadow-sm">
+                        <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">burujsportsacademy.com</div>
+                        <p className="mt-1 text-sm font-medium text-blue-700">{titleValue}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{descriptionValue}</p>
+                      </div>
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-navy">{titleValue}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{descriptionValue}</p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                      <span className={`rounded px-2 py-1 ${getStatusClasses(status)}`}>{status}</span>
-                      {art.is_featured && <span className="rounded bg-gold px-2 py-1 text-gold-foreground">Featured</span>}
+
+                    <div className="rounded-md border bg-background p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Social preview</p>
+                      <div className="mt-3 overflow-hidden rounded-xl border bg-slate-950 text-white shadow-md">
+                        {previewImage ? <img src={previewImage} alt="" className="h-28 w-full object-cover" /> : <div className="flex h-28 items-center justify-center bg-slate-800 text-xs text-slate-300">No image</div>}
+                        <div className="p-3">
+                          <p className="text-[10px] uppercase tracking-[0.14em] text-slate-300">Buruj Sports Academy</p>
+                          <p className="mt-1 text-sm font-bold text-white">{titleValue}</p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-slate-300">{descriptionValue}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
