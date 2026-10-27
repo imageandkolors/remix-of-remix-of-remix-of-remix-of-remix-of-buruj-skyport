@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaLibrary } from "@/components/staff/MediaLibrary";
+import { AboutManager } from "@/components/staff/AboutManager";
+import { listAboutAdmin } from "@/lib/about.functions";
 import {
   listContentAdmin,
   requestCmsUpload,
@@ -63,9 +65,13 @@ const EMPTY: Draft = {
 function ContentAdminPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["content-admin"], queryFn: () => listContentAdmin() });
+  const aboutQ = useQuery({ queryKey: ["about-admin"], queryFn: () => listAboutAdmin() });
   const [selected, setSelected] = useState<Draft | null>(null);
-  const [tab, setTab] = useState<"articles" | "slides" | "feeds" | "media">("articles");
-  const refresh = () => qc.invalidateQueries({ queryKey: ["content-admin"] });
+  const [tab, setTab] = useState<"articles" | "slides" | "feeds" | "media" | "about">("articles");
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["content-admin"] });
+    void qc.invalidateQueries({ queryKey: ["about-admin"] });
+  };
   useEffect(() => {
     if (!selected && q.data?.news[0]) setSelected(toDraft(q.data.news[0]));
   }, [q.data, selected]);
@@ -105,6 +111,9 @@ function ContentAdminPage() {
         </Tab>
         <Tab active={tab === "media"} onClick={() => setTab("media")}>
           Media library
+        </Tab>
+        <Tab active={tab === "about"} onClick={() => setTab("about")}>
+          About Us
         </Tab>
       </div>
       {q.isLoading && <p className="py-12 text-muted-foreground">Loading content…</p>}
@@ -163,6 +172,7 @@ function ContentAdminPage() {
       {tab === "slides" && <SlideManager slides={q.data?.slides ?? []} onRefresh={refresh} />}
       {tab === "feeds" && <FeedManager feeds={q.data?.feeds ?? []} onRefresh={refresh} />}
       {tab === "media" && <MediaLibrary items={q.data?.gallery ?? []} onRefresh={refresh} />}
+      {tab === "about" && <AboutManager sections={aboutQ.data ?? []} onRefresh={refresh} />}
     </div>
   );
 }

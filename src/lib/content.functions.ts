@@ -115,7 +115,7 @@ const NEWS_COLS =
 const pathSchema = z
   .string()
   .max(300)
-  .regex(/^(splash|news|social)\/[A-Za-z0-9._\-/]+$/)
+  .regex(/^(splash|news|social|about)\/[A-Za-z0-9._\-/]+$/)
   .nullable()
   .optional()
   .transform((v) => v || null);
@@ -268,7 +268,7 @@ export const requestCmsUpload = createServerFn({ method: "POST" })
           .int()
           .positive()
           .max(150 * 1024 * 1024),
-        purpose: z.enum(["news", "social", "splash"]),
+        purpose: z.enum(["news", "social", "splash", "about"]),
       })
       .parse(d),
   )

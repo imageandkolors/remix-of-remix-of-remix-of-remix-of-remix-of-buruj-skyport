@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, HeartHandshake, ShieldCheck, Trophy, Users, Globe, Dumbbell, Home } from "lucide-react";
-import { Reveal, SectionHeading } from "@/components/site/Reveal";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/site/Reveal";
+import { getAboutSections, type AboutSection } from "@/lib/about.functions";
 import campus from "@/assets/hero-campus.jpg";
 import training from "@/assets/hero-training.jpg";
 
@@ -9,128 +10,160 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About Buruj Sports Academy — Our Story Since 2013" },
-      { name: "description", content: "Founded in 2013 by Dr. Salaudeen Waheed Buruj, Buruj Sports Academy combines certified coaching, full secondary education and 24/7 welfare in Ikorodu, Lagos." },
+      {
+        name: "description",
+        content:
+          "The story, people, values and complete development environment of Buruj Sports Academy.",
+      },
       { property: "og:title", content: "About Buruj Sports Academy" },
-      { property: "og:description", content: "Our history, leadership, coaching philosophy, dual-team safety model and pathway to global success." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
     ],
   }),
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData({
+      queryKey: ["about-sections"],
+      queryFn: () => getAboutSections(),
+    }),
+  errorComponent: () => (
+    <p className="p-10 text-center">We couldn&apos;t load About Us. Please refresh.</p>
+  ),
   component: About,
 });
 
-const TIMELINE = [
-  { year: "2013", text: "Buruj FC & Sports Academy founded in Ikorodu, Lagos, to give young Nigerian talent a structured route into professional football." },
-  { year: "Growth", text: "Residential boarding introduced, alongside the Play & Study model combining full secondary education with elite training." },
-  { year: "Today", text: "International trial showcases across the UK, Spain, France, Italy, Portugal, Lithuania and Sweden — plus national team call-ups at U-15, U-17 and U-20 levels." },
-];
-
-const PILLARS = [
-  { icon: Trophy, t: "Certified coaching", b: "Coaches certified by the NFF and LSFA, holding FIFA certificates, leading structured daily sessions." },
-  { icon: GraduationCap, t: "Academic excellence", b: "Full Nigerian curriculum from JSS1 to SS3 with WAEC and NECO preparation, qualified teachers and small classes." },
-  { icon: ShieldCheck, t: "Coaching Team", b: "Technical, tactical, physical and mental development tracked every term, with match exposure and evaluation." },
-  { icon: HeartHandshake, t: "24/7 Welfare Team", b: "Round-the-clock pastoral care, health supervision and boarding support — our dual-team safety model." },
-];
-
-const LIFE = [
-  { icon: Home, t: "Residential life", b: "Clean, secure hostel accommodation with maximum campus security, nutritious daily meals designed for young athletes, and medical insurance coverage with routine health checks." },
-  { icon: Dumbbell, t: "Fitness & conditioning", b: "Dedicated gym and conditioning sessions build strength, stamina and agility, with personal fitness tracking and injury prevention and rehabilitation support." },
-  { icon: Users, t: "Character & leadership", b: "Character building and leadership mentoring shape disciplined young people — on the pitch, in the classroom and beyond." },
-  { icon: Globe, t: "Global pathway", b: "Professional club trials abroad, scholarships and national team selections through our strong partnerships and global network." },
-];
-
+function fallbackImage(section: AboutSection) {
+  return section.section_key === "hero"
+    ? campus
+    : section.section_key === "story"
+      ? training
+      : null;
+}
 function About() {
+  const { data } = useSuspenseQuery({
+    queryKey: ["about-sections"],
+    queryFn: () => getAboutSections(),
+  });
   return (
-    <>
-      <section className="relative overflow-hidden bg-navy py-28 text-navy-foreground">
-        <img src={campus} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" width={1600} height={912} />
+    <div>
+      {data.map((section) => (
+        <AboutSectionView key={section.id} section={section} />
+      ))}
+    </div>
+  );
+}
+function AboutSectionView({ section }: { section: AboutSection }) {
+  const image = section.image_url || fallbackImage(section);
+  const textClass = section.layout === "hero" || section.layout === "cta" ? "text-white" : "";
+  const inner = (
+    <div
+      className={`prose prose-lg max-w-none ${textClass} prose-headings:font-display prose-headings:uppercase prose-headings:text-inherit prose-p:text-inherit prose-strong:text-inherit`}
+      dangerouslySetInnerHTML={{ __html: section.body_html }}
+    />
+  );
+  if (section.layout === "hero")
+    return (
+      <section
+        className="relative overflow-hidden py-28"
+        style={{ backgroundColor: section.bg_color, color: section.text_color }}
+      >
+        <>
+          {image && (
+            <img
+              src={image}
+              alt={section.image_alt || ""}
+              className="absolute inset-0 h-full w-full object-cover opacity-30"
+            />
+          )}
+        </>
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-          <p className="animate-rise font-display uppercase tracking-[0.3em] text-gold">About the academy</p>
-          <h1 className="animate-rise mt-3 max-w-3xl text-6xl font-extrabold uppercase leading-[0.9] sm:text-7xl">Discipline. Development. Destiny.</h1>
-          <p className="animate-rise mt-6 max-w-2xl text-lg opacity-85">
-            Buruj Sports Academy offers a unique and intensive residential experience that combines top-tier football training, career-building exposure, and a supportive environment for athletic and personal development. We identify and groom elite football talent, opening doors to national recognition and international football trials.
+          <p
+            className="font-display uppercase tracking-[0.3em]"
+            style={{ color: section.accent_color }}
+          >
+            {section.eyebrow}
           </p>
+          <h1 className="mt-3 max-w-3xl text-6xl font-extrabold uppercase leading-[0.9] sm:text-7xl">
+            {section.title}
+          </h1>
+          <div className="mt-6 max-w-2xl">{inner}</div>
         </div>
       </section>
-
-      <section className="mx-auto grid max-w-7xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2">
+    );
+  if (section.layout === "cta")
+    return (
+      <section
+        className="py-20"
+        style={{ backgroundColor: section.bg_color, color: section.text_color }}
+      >
+        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
+          <p
+            className="font-display uppercase tracking-[0.3em]"
+            style={{ color: section.accent_color }}
+          >
+            {section.eyebrow}
+          </p>
+          <h2 className="mt-3 text-4xl font-extrabold uppercase">{section.title}</h2>
+          <div className="mx-auto mt-4 max-w-2xl">{inner}</div>
+          <Button
+            asChild
+            size="lg"
+            className="mt-7 font-display font-bold uppercase"
+            style={{ backgroundColor: section.accent_color, color: section.text_color }}
+          >
+            <Link to="/admissions">Explore our programmes</Link>
+          </Button>
+        </div>
+      </section>
+    );
+  if (section.layout === "split")
+    return (
+      <section
+        className="mx-auto grid max-w-7xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2"
+        style={{ color: section.text_color }}
+      >
         <div>
-          <SectionHeading eyebrow="Our story" title="Excellence since 2013" intro="Buruj Sports Academy was founded to give young Nigerian talent a structured, safe and ambitious route into professional football — without sacrificing education. Our commitment is to nurture talent, instill discipline, and create real football opportunities." />
-          <ol className="mt-10 space-y-6 border-l-2 border-gold pl-6">
-            {TIMELINE.map((t, i) => (
-              <Reveal key={t.year} delay={i * 100}>
-                <li>
-                  <p className="font-display text-2xl font-extrabold uppercase text-primary">{t.year}</p>
-                  <p className="text-muted-foreground">{t.text}</p>
-                </li>
-              </Reveal>
-            ))}
-          </ol>
+          <p
+            className="font-display uppercase tracking-[0.3em]"
+            style={{ color: section.accent_color }}
+          >
+            {section.eyebrow}
+          </p>
+          <h2 className="mt-2 text-4xl font-extrabold uppercase">{section.title}</h2>
+          <div className="mt-8">{inner}</div>
         </div>
-        <Reveal>
-          <img src={training} alt="Buruj players in training" className="h-full w-full rounded-xl object-cover" loading="lazy" width={1600} height={912} />
-        </Reveal>
+        {image && (
+          <Reveal>
+            <img
+              src={image}
+              alt={section.image_alt || section.title}
+              className="h-full max-h-[600px] w-full rounded-xl object-cover"
+              loading="lazy"
+            />
+          </Reveal>
+        )}
       </section>
-
-      <section className="bg-secondary py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <SectionHeading eyebrow="Leadership" title="The people behind Buruj" />
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {[
-              { role: "Founder", name: "Dr. Salaudeen Waheed Buruj", body: "Visionary founder who established the academy in 2013 to develop talent on and off the pitch." },
-              { role: "Club Patron", name: "Club Patron", body: "Champions the academy's mission and partnerships across the football community." },
-              { role: "Matron", name: "Academy Matron", body: "Leads boarding life and pastoral care for every resident player." },
-            ].map((p, i) => (
-              <Reveal key={p.role} delay={i * 100}>
-                <div className="glow-hover h-full rounded-xl bg-card p-8">
-                  <p className="font-display text-sm font-bold uppercase tracking-widest text-gold">{p.role}</p>
-                  <h3 className="mt-2 text-3xl font-bold uppercase text-navy">{p.name}</h3>
-                  <p className="mt-3 text-muted-foreground">{p.body}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
-        <SectionHeading eyebrow="How we work" title="Coaching philosophy & safety" intro="Every player is supported by two dedicated teams working side by side — a Coaching Team for development and a 24/7 Welfare Team for care." />
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {PILLARS.map((f, i) => (
-            <Reveal key={f.t} delay={i * 80}>
-              <div className="glow-hover h-full rounded-xl border bg-card p-6">
-                <f.icon className="h-8 w-8 text-primary" />
-                <h3 className="mt-4 text-2xl font-bold uppercase text-navy">{f.t}</h3>
-                <p className="mt-2 text-muted-foreground">{f.b}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-navy py-24 text-navy-foreground">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <SectionHeading eyebrow="Beyond the pitch" title="A complete environment for growth" intro="We go beyond just sports — nurturing young talents academically, athletically and morally, setting them on a clear path to success." />
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {LIFE.map((f, i) => (
-              <Reveal key={f.t} delay={i * 80}>
-                <div className="flex h-full gap-4 rounded-xl border border-navy-foreground/15 p-6">
-                  <f.icon className="h-8 w-8 shrink-0 text-gold" />
-                  <div>
-                    <h3 className="text-2xl font-bold uppercase">{f.t}</h3>
-                    <p className="mt-2 opacity-85">{f.b}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-          <div className="mt-12 text-center">
-            <Button asChild size="lg" className="bg-gold font-display font-bold uppercase text-gold-foreground hover:bg-gold/90">
-              <Link to="/admissions">Explore our programmes</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    </>
+    );
+  return (
+    <section
+      className="py-24"
+      style={{ backgroundColor: section.bg_color, color: section.text_color }}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <p
+          className="font-display uppercase tracking-[0.3em]"
+          style={{ color: section.accent_color }}
+        >
+          {section.eyebrow}
+        </p>
+        <h2 className="mt-2 text-4xl font-extrabold uppercase">{section.title}</h2>
+        <div className="mt-8 grid gap-6 md:grid-cols-2">{inner}</div>
+        {image && (
+          <img
+            src={image}
+            alt={section.image_alt || section.title}
+            className="mt-8 max-h-[460px] w-full rounded-xl object-cover"
+            loading="lazy"
+          />
+        )}
+      </div>
+    </section>
   );
 }
