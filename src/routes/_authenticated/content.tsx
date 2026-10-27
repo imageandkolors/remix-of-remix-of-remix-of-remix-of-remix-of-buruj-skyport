@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MediaLibrary } from "@/components/staff/MediaLibrary";
 import {
   listContentAdmin,
   requestCmsUpload,
@@ -16,6 +17,8 @@ import {
   saveSlide,
   deleteSlide,
   saveSocialFeed,
+  saveCategory,
+  saveTag,
   type NewsItem,
   type SplashSlide,
   type SocialFeed,
@@ -61,7 +64,7 @@ function ContentAdminPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["content-admin"], queryFn: () => listContentAdmin() });
   const [selected, setSelected] = useState<Draft | null>(null);
-  const [tab, setTab] = useState<"articles" | "slides" | "feeds">("articles");
+  const [tab, setTab] = useState<"articles" | "slides" | "feeds" | "media">("articles");
   const refresh = () => qc.invalidateQueries({ queryKey: ["content-admin"] });
   useEffect(() => {
     if (!selected && q.data?.news[0]) setSelected(toDraft(q.data.news[0]));
@@ -100,53 +103,145 @@ function ContentAdminPage() {
         <Tab active={tab === "feeds"} onClick={() => setTab("feeds")}>
           Social feeds
         </Tab>
+        <Tab active={tab === "media"} onClick={() => setTab("media")}>
+          Media library
+        </Tab>
       </div>
       {q.isLoading && <p className="py-12 text-muted-foreground">Loading content…</p>}
       {q.error && <p className="py-12 text-destructive">{(q.error as Error).message}</p>}
       {tab === "articles" && (
-        <div className="mt-6 grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="space-y-3">
-            {posts.map((post) => (
-              <button
-                key={post.id}
-                onClick={() => setSelected(toDraft(post))}
-                className={`w-full rounded-xl border p-3 text-left ${selected?.id === post.id ? "border-navy bg-navy text-white" : "bg-card hover:border-primary"}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="line-clamp-2 text-sm font-semibold">{post.title}</span>
-                  <span className="text-[10px] uppercase">{post.published ? "Live" : "Draft"}</span>
-                </div>
-                <p
-                  className={`mt-1 text-xs ${selected?.id === post.id ? "text-white/70" : "text-muted-foreground"}`}
+        <>
+          <CategoryTagManager
+            categories={q.data?.categories ?? []}
+            tags={q.data?.tags ?? []}
+            onRefresh={refresh}
+          />
+          <div className="mt-6 grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+            <aside className="space-y-3">
+              {posts.map((post) => (
+                <button
+                  key={post.id}
+                  onClick={() => setSelected(toDraft(post))}
+                  className={`w-full rounded-xl border p-3 text-left ${selected?.id === post.id ? "border-navy bg-navy text-white" : "bg-card hover:border-primary"}`}
                 >
-                  {post.category}
-                </p>
-              </button>
-            ))}
-            {!posts.length && (
-              <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                No saved articles yet. Create your first one.
-              </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="line-clamp-2 text-sm font-semibold">{post.title}</span>
+                    <span className="text-[10px] uppercase">
+                      {post.published ? "Live" : "Draft"}
+                    </span>
+                  </div>
+                  <p
+                    className={`mt-1 text-xs ${selected?.id === post.id ? "text-white/70" : "text-muted-foreground"}`}
+                  >
+                    {post.category}
+                  </p>
+                </button>
+              ))}
+              {!posts.length && (
+                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                  No saved articles yet. Create your first one.
+                </div>
+              )}
+            </aside>
+            {selected && (
+              <ArticleEditor
+                initial={selected}
+                categories={q.data?.categories ?? []}
+                onSaved={() => {
+                  setSelected(null);
+                  refresh();
+                }}
+                onDeleted={() => {
+                  setSelected(null);
+                  refresh();
+                }}
+              />
             )}
-          </aside>
-          {selected && (
-            <ArticleEditor
-              initial={selected}
-              categories={q.data?.categories ?? []}
-              onSaved={() => {
-                setSelected(null);
-                refresh();
-              }}
-              onDeleted={() => {
-                setSelected(null);
-                refresh();
-              }}
-            />
-          )}
-        </div>
+          </div>
+        </>
       )}
       {tab === "slides" && <SlideManager slides={q.data?.slides ?? []} onRefresh={refresh} />}
       {tab === "feeds" && <FeedManager feeds={q.data?.feeds ?? []} onRefresh={refresh} />}
+      {tab === "media" && <MediaLibrary items={q.data?.gallery ?? []} onRefresh={refresh} />}
+    </div>
+  );
+}
+
+function CategoryTagManager({
+  categories,
+  tags,
+  onRefresh,
+}: {
+  categories: { name: string }[];
+  tags: { name: string }[];
+  onRefresh: () => void;
+}) {
+  const [category, setCategory] = useState("");
+  const [tag, setTag] = useState("");
+  async function addCategory() {
+    if (!category.trim()) return;
+    try {
+      await saveCategory({ data: { name: category.trim(), description: null } });
+      setCategory("");
+      onRefresh();
+      toast.success("Category created");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+  async function addTag() {
+    if (!tag.trim()) return;
+    try {
+      await saveTag({ data: { name: tag.trim() } });
+      setTag("");
+      onRefresh();
+      toast.success("Tag created");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+  return (
+    <div className="mt-6 grid gap-4 rounded-xl border bg-muted/20 p-4 lg:grid-cols-2">
+      <div>
+        <Label>Create category</Label>
+        <div className="mt-2 flex gap-2">
+          <Input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void addCategory();
+            }}
+            placeholder="e.g. Academy News"
+          />
+          <Button type="button" onClick={() => void addCategory()}>
+            <Plus />
+            Add
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Existing: {categories.map((x) => x.name).join(" · ") || "none"}
+        </p>
+      </div>
+      <div>
+        <Label>Create tag</Label>
+        <div className="mt-2 flex gap-2">
+          <Input
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void addTag();
+            }}
+            placeholder="e.g. matchday"
+          />
+          <Button type="button" onClick={() => void addTag()}>
+            <Plus />
+            Add
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Existing: {tags.map((x) => x.name).join(", ") || "none"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -201,6 +296,12 @@ function ArticleEditor({
   const [p, setP] = useState(initial);
   const [busy, setBusy] = useState(false);
   const editor = useRef<HTMLDivElement>(null);
+  const manual = useRef({
+    slug: Boolean(initial.id),
+    metaTitle: Boolean(initial.meta_title),
+    metaDescription: Boolean(initial.meta_description),
+    keywords: Boolean(initial.seo_keywords),
+  });
   // Initialize the editor only when switching articles; input updates are handled by syncHtml.
   useEffect(() => {
     if (editor.current && editor.current.innerHTML !== p.body_html)
@@ -208,6 +309,43 @@ function ArticleEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id]);
   const set = (key: keyof Draft, value: unknown) => setP((x) => ({ ...x, [key]: value }));
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 80);
+  function titleChanged(value: string) {
+    setP((x) => ({
+      ...x,
+      title: value,
+      slug: manual.current.slug ? x.slug : slugify(value),
+      meta_title: manual.current.metaTitle ? x.meta_title : value.slice(0, 80),
+      meta_description: manual.current.metaDescription
+        ? x.meta_description
+        : (x.excerpt || value).slice(0, 180),
+    }));
+  }
+  function excerptChanged(value: string) {
+    setP((x) => ({
+      ...x,
+      excerpt: value,
+      meta_description: manual.current.metaDescription ? x.meta_description : value.slice(0, 180),
+    }));
+  }
+  function tagsChanged(value: string) {
+    const tags = value
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    setP((x) => ({
+      ...x,
+      tags,
+      seo_keywords: manual.current.keywords
+        ? x.seo_keywords
+        : [...new Set([...tags, x.category])].join(", "),
+    }));
+  }
   async function upload(file: File, purpose: "news" | "social" | "splash", inline = false) {
     setBusy(true);
     try {
@@ -323,13 +461,21 @@ function ArticleEditor({
       </div>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <Field label="Article title">
-          <Input value={p.title} onChange={(e) => set("title", e.target.value)} />
+          <Input value={p.title} onChange={(e) => titleChanged(e.target.value)} />
         </Field>
         <Field label="Category">
           <Input
             list="cms-categories"
             value={p.category}
-            onChange={(e) => set("category", e.target.value)}
+            onChange={(e) =>
+              setP((x) => ({
+                ...x,
+                category: e.target.value,
+                seo_keywords: manual.current.keywords
+                  ? x.seo_keywords
+                  : [...new Set([...x.tags, e.target.value])].join(", "),
+              }))
+            }
           />
           <datalist id="cms-categories">
             {categories.map((c) => (
@@ -338,7 +484,13 @@ function ArticleEditor({
           </datalist>
         </Field>
         <Field label="Slug">
-          <Input value={p.slug} onChange={(e) => set("slug", e.target.value)} />
+          <Input
+            value={p.slug}
+            onChange={(e) => {
+              manual.current.slug = true;
+              set("slug", e.target.value);
+            }}
+          />
         </Field>
         <Field label="Author">
           <Input value={p.author ?? ""} onChange={(e) => set("author", e.target.value)} />
@@ -349,7 +501,7 @@ function ArticleEditor({
           <Textarea
             rows={3}
             value={p.excerpt ?? ""}
-            onChange={(e) => set("excerpt", e.target.value)}
+            onChange={(e) => excerptChanged(e.target.value)}
           />
         </Field>
       </div>
@@ -427,15 +579,7 @@ function ArticleEditor({
         <Field label="Tags (comma separated)">
           <Input
             value={p.tags.join(", ")}
-            onChange={(e) =>
-              set(
-                "tags",
-                e.target.value
-                  .split(",")
-                  .map((x) => x.trim())
-                  .filter(Boolean),
-              )
-            }
+            onChange={(e) => tagsChanged(e.target.value)}
             placeholder="academy, matchday, admissions"
           />
         </Field>
@@ -444,7 +588,13 @@ function ArticleEditor({
         <h3 className="font-semibold">SEO settings</h3>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Field label="SEO title">
-            <Input value={p.meta_title ?? ""} onChange={(e) => set("meta_title", e.target.value)} />
+            <Input
+              value={p.meta_title ?? ""}
+              onChange={(e) => {
+                manual.current.metaTitle = true;
+                set("meta_title", e.target.value);
+              }}
+            />
           </Field>
           <Field label="Canonical URL">
             <Input
@@ -457,14 +607,20 @@ function ArticleEditor({
             <Textarea
               rows={3}
               value={p.meta_description ?? ""}
-              onChange={(e) => set("meta_description", e.target.value)}
+              onChange={(e) => {
+                manual.current.metaDescription = true;
+                set("meta_description", e.target.value);
+              }}
             />
           </Field>
           <Field label="SEO keywords">
             <Textarea
               rows={3}
               value={p.seo_keywords}
-              onChange={(e) => set("seo_keywords", e.target.value)}
+              onChange={(e) => {
+                manual.current.keywords = true;
+                set("seo_keywords", e.target.value);
+              }}
               placeholder="football academy, Lagos, trials"
             />
           </Field>

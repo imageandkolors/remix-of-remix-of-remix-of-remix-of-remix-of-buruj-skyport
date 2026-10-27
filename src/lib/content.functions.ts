@@ -57,6 +57,20 @@ export type SocialFeed = {
   display_limit: number;
   sort: number;
 };
+export type GalleryMedia = {
+  id: string;
+  title: string;
+  caption: string | null;
+  category: string;
+  kind: "image" | "video" | "youtube";
+  storage_path: string | null;
+  external_url: string | null;
+  mime_type: string | null;
+  sort: number;
+  is_active: boolean;
+  media_url: string | null;
+  created_at: string;
+};
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
@@ -182,7 +196,7 @@ export const listContentAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const [s, n, c, f] = await Promise.all([
+    const [s, n, c, f, t, g] = await Promise.all([
       (context.supabase as any).from("splash_slides").select("*").order("sort"),
       (context.supabase as any)
         .from("news_posts")
@@ -196,6 +210,12 @@ export const listContentAdmin = createServerFn({ method: "GET" })
         .from("social_feeds")
         .select("id,platform,label,source_url,is_active,display_limit,sort")
         .order("sort"),
+      (context.supabase as any).from("content_tags").select("id,name,slug").order("name"),
+      (context.supabase as any)
+        .from("gallery_media")
+        .select("*")
+        .order("sort")
+        .order("created_at", { ascending: false }),
     ]);
     const slides = s.data ?? [];
     const news = await hydrateNews(n.data ?? []);
@@ -209,8 +229,32 @@ export const listContentAdmin = createServerFn({ method: "GET" })
       news,
       categories: c.data ?? [],
       feeds: f.data ?? [],
+      tags: t.data ?? [],
+      gallery: await hydrateGallery(g.data ?? []),
     };
   });
+
+async function hydrateGallery(rows: any[]): Promise<GalleryMedia[]> {
+  const urls = await signPaths(rows.map((row) => row.storage_path));
+  return rows.map((row) => ({
+    ...row,
+    media_url: row.storage_path ? (urls.get(row.storage_path) ?? null) : row.external_url,
+  }));
+}
+
+export const getGalleryMedia = createServerFn({ method: "GET" }).handler(
+  async (): Promise<GalleryMedia[]> => {
+    const { data, error } = await (publicClient() as any)
+      .from("gallery_media")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return hydrateGallery(data ?? []);
+  },
+);
 
 export const requestCmsUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -372,6 +416,13 @@ export const saveNews = createServerFn({ method: "POST" })
           ? "That web address is already used"
           : r.error.message || "Could not save article",
       );
+    const normalizedTags = [...new Set((rest.tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
+    if (normalizedTags.length) {
+      await (context.supabase as any).from("content_tags").upsert(
+        normalizedTags.map((name) => ({ name, slug: safeSlug(name) })),
+        { onConflict: "slug" },
+      );
+    }
     return { ok: true };
   });
 
@@ -421,3 +472,80 @@ export const getSocialFeeds = createServerFn({ method: "GET" }).handler(
     return data ?? [];
   },
 );
+
+export const saveCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ name: z.string().trim().min(2).max(80), description: opt(300) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const name = data.name.trim();
+    const { error } = await (context.supabase as any)
+      .from("content_categories")
+      .insert({ name, slug: safeSlug(name), description: data.description, is_active: true });
+    if (error)
+      throw new Error(
+        error.code === "23505" ? "That category already exists" : "Could not create category",
+      );
+    return { ok: true };
+  });
+
+export const saveTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ name: z.string().trim().min(1).max(40) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const name = data.name.trim();
+    const { error } = await (context.supabase as any)
+      .from("content_tags")
+      .insert({ name, slug: safeSlug(name) });
+    if (error)
+      throw new Error(error.code === "23505" ? "That tag already exists" : "Could not create tag");
+    return { ok: true };
+  });
+
+export const saveGalleryMedia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        title: z.string().trim().min(2).max(160),
+        caption: opt(500),
+        category: z.string().trim().min(2).max(80),
+        kind: z.enum(["image", "video", "youtube"]),
+        storage_path: pathSchema,
+        external_url: z.string().url().max(500).nullable().optional(),
+        mime_type: opt(120),
+        sort: z.number().int().min(0).max(999),
+        is_active: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    if (data.kind === "youtube" && (!data.external_url || data.storage_path))
+      throw new Error("YouTube media needs a YouTube URL only");
+    if (data.kind !== "youtube" && (!data.storage_path || data.external_url))
+      throw new Error("Local image and video media needs an uploaded file only");
+    const { id, ...row } = data;
+    const result = id
+      ? await (context.supabase as any).from("gallery_media").update(row).eq("id", id)
+      : await (context.supabase as any).from("gallery_media").insert(row);
+    if (result.error) throw new Error(result.error.message || "Could not save gallery media");
+    return { ok: true };
+  });
+
+export const deleteGalleryMedia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { error } = await (context.supabase as any)
+      .from("gallery_media")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error("Could not delete gallery media");
+    return { ok: true };
+  });

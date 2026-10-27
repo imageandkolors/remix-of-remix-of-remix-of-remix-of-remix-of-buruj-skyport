@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { getPlayer, getPlayers, getProgramme, getProgrammes } from "./public.functions";
-import { getNews, getNewsArticle, getSplashSlides } from "./content.functions";
+import { getGalleryMedia, getNews, getNewsArticle, getSplashSlides } from "./content.functions";
 
 export const programmesQuery = queryOptions({
   queryKey: ["programmes"],
@@ -17,4 +17,8 @@ export const newsArticleQuery = (slug: string) =>
 export const splashSlidesQuery = queryOptions({
   queryKey: ["splash-slides"],
   queryFn: () => getSplashSlides(),
+});
+export const galleryMediaQuery = queryOptions({
+  queryKey: ["gallery-media"],
+  queryFn: () => getGalleryMedia(),
 });
