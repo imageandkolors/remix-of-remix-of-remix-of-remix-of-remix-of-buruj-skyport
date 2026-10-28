@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, Link2, Plus, Save, Trash2, Upload, Video } from "lucide-react";
+import { ImagePlus, Link2, Plus, Save, Trash2, Upload, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   saveCategory,
   saveTag,
   type NewsItem,
+  type NewsMedia,
   type SplashSlide,
   type SocialFeed,
 } from "@/lib/content.functions";
@@ -51,6 +52,9 @@ const EMPTY: Draft = {
   published_at: new Date().toISOString(),
   cover_path: null,
   cover_url: null,
+  cover_fit: "contain",
+  cover_position: "center",
+  gallery: [],
   cover_preview: null,
   meta_title: "",
   meta_description: "",
@@ -305,6 +309,7 @@ function ArticleEditor({
 }) {
   const [p, setP] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const editor = useRef<HTMLDivElement>(null);
   const manual = useRef({
     slug: Boolean(initial.id),
@@ -384,6 +389,75 @@ function ArticleEditor({
       setBusy(false);
     }
   }
+  async function uploadGallery(file: File) {
+    setBusy(true);
+    try {
+      const r = await requestCmsUpload({
+        data: { filename: file.name, mimeType: file.type, size: file.size, purpose: "news" },
+      });
+      const { error } = await supabase.storage
+        .from(r.bucket)
+        .uploadToSignedUrl(r.path, r.token, file, { contentType: file.type });
+      if (error) throw error;
+      setP((x) => ({
+        ...x,
+        gallery: [
+          ...x.gallery,
+          {
+            id: `local-${crypto.randomUUID()}`,
+            post_id: x.id,
+            sort: x.gallery.length,
+            kind: file.type.startsWith("video/") ? "video" : "image",
+            storage_path: r.path,
+            external_url: null,
+            alt_text: x.title,
+            caption: null,
+            mime_type: file.type,
+            media_url: URL.createObjectURL(file),
+          },
+        ],
+      }));
+      toast.success("Gallery media uploaded");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function addYoutube() {
+    const value = youtubeUrl.trim();
+    if (!/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(value)) {
+      toast.error("Enter a valid YouTube URL");
+      return;
+    }
+    setP((x) => ({
+      ...x,
+      gallery: [
+        ...x.gallery,
+        {
+          id: `youtube-${crypto.randomUUID()}`,
+          post_id: x.id,
+          sort: x.gallery.length,
+          kind: "youtube",
+          storage_path: null,
+          external_url: value,
+          alt_text: x.title,
+          caption: null,
+          mime_type: null,
+          media_url: value,
+        },
+      ],
+    }));
+    setYoutubeUrl("");
+  }
+  function updateGallery(id: string, patch: Partial<NewsMedia>) {
+    setP((x) => ({
+      ...x,
+      gallery: x.gallery.map((item, index) =>
+        item.id === id ? { ...item, ...patch, sort: index } : item,
+      ),
+    }));
+  }
   function syncHtml() {
     if (editor.current) set("body_html", editor.current.innerHTML);
   }
@@ -422,6 +496,17 @@ function ArticleEditor({
           seo_author: p.seo_author,
           article_section: p.article_section,
           schema_publisher: p.schema_publisher,
+          cover_fit: p.cover_fit,
+          cover_position: p.cover_position,
+          media: p.gallery.map((item, index) => ({
+            sort: index,
+            kind: item.kind,
+            storage_path: item.storage_path,
+            external_url: item.external_url,
+            alt_text: item.alt_text,
+            caption: item.caption,
+            mime_type: item.mime_type,
+          })),
         },
       });
       toast.success((publish ?? p.published) ? "Article published" : "Draft saved");
@@ -579,12 +664,48 @@ function ArticleEditor({
             )}
           </div>
           {p.cover_preview && (
-            <img
-              src={p.cover_preview}
-              alt="Cover preview"
-              className="mt-3 h-32 w-full rounded-lg object-cover"
-            />
+            <div className="mt-3 overflow-hidden rounded-lg bg-muted">
+              <img
+                src={p.cover_preview}
+                alt="Cover preview"
+                className="h-44 w-full"
+                style={{ objectFit: p.cover_fit, objectPosition: p.cover_position }}
+              />
+            </div>
           )}
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Cover display
+              <select
+                value={p.cover_fit}
+                onChange={(e) => set("cover_fit", e.target.value as "contain" | "cover")}
+                className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"
+              >
+                <option value="contain">Fit entire image</option>
+                <option value="cover">Crop to fill frame</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Crop focus
+              <select
+                value={p.cover_position}
+                onChange={(e) => set("cover_position", e.target.value)}
+                className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"
+              >
+                {[
+                  ["center", "Center"],
+                  ["center top", "Top / face"],
+                  ["center bottom", "Bottom"],
+                  ["left center", "Left"],
+                  ["right center", "Right"],
+                ].map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </Field>
         <Field label="Tags (comma separated)">
           <Input
@@ -594,6 +715,101 @@ function ArticleEditor({
           />
         </Field>
       </div>
+      <section className="mt-5 rounded-xl border p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Story lightbox gallery</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add multiple local images or videos and optional YouTube videos. Visitors can open
+              them from the story and move through them with the lightbox arrows.
+            </p>
+          </div>
+          <Button asChild type="button" variant="outline" disabled={busy}>
+            <label className="cursor-pointer">
+              <Upload />
+              Add local media
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = [...(e.target.files ?? [])];
+                  e.currentTarget.value = "";
+                  void files.reduce(
+                    (promise, file) => promise.then(() => uploadGallery(file)),
+                    Promise.resolve(),
+                  );
+                }}
+              />
+            </label>
+          </Button>
+        </div>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <Input
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=…"
+          />
+          <Button type="button" variant="outline" onClick={addYoutube}>
+            <Link2 />
+            Add YouTube
+          </Button>
+        </div>
+        {p.gallery.length > 0 ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {p.gallery.map((item) => (
+              <div key={item.id} className="flex gap-3 rounded-lg border bg-muted/20 p-2">
+                <div className="h-20 w-28 shrink-0 overflow-hidden rounded bg-navy">
+                  {item.kind === "image" && item.media_url && (
+                    <img
+                      src={item.media_url}
+                      alt={item.alt_text ?? p.title}
+                      className="h-full w-full object-contain"
+                    />
+                  )}
+                  {item.kind === "video" && item.media_url && (
+                    <video src={item.media_url} muted className="h-full w-full object-contain" />
+                  )}
+                  {item.kind === "youtube" && (
+                    <div className="grid h-full place-items-center text-xs font-semibold text-white">
+                      YouTube
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Input
+                    value={item.caption ?? ""}
+                    onChange={(e) => updateGallery(item.id, { caption: e.target.value })}
+                    placeholder="Caption (optional)"
+                    className="h-8 text-xs"
+                  />
+                  <Input
+                    value={item.alt_text ?? ""}
+                    onChange={(e) => updateGallery(item.id, { alt_text: e.target.value })}
+                    placeholder="Alt text"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="self-start rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() =>
+                    setP((x) => ({ ...x, gallery: x.gallery.filter((m) => m.id !== item.id) }))
+                  }
+                  aria-label="Remove gallery item"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            No gallery items yet. The cover image remains the story’s main image.
+          </p>
+        )}
+      </section>
       <div className="mt-5 rounded-xl border p-4">
         <h3 className="font-semibold">SEO settings</h3>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">

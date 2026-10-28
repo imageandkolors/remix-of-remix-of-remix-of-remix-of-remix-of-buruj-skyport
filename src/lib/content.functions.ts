@@ -44,9 +44,24 @@ export type NewsItem = {
   canonical_url: string | null;
   social_image_path: string | null;
   social_image_url: string | null;
+  cover_fit: "contain" | "cover";
+  cover_position: string;
+  gallery: NewsMedia[];
   seo_author: string | null;
   article_section: string | null;
   schema_publisher: string | null;
+};
+export type NewsMedia = {
+  id: string;
+  post_id: string;
+  sort: number;
+  kind: "image" | "video" | "youtube";
+  storage_path: string | null;
+  external_url: string | null;
+  alt_text: string | null;
+  caption: string | null;
+  mime_type: string | null;
+  media_url: string | null;
 };
 export type SocialFeed = {
   id: string;
@@ -117,7 +132,7 @@ async function hydrateHtml(html: string | null | undefined) {
 }
 
 const NEWS_COLS =
-  "id, slug, title, excerpt, body, body_html, category, tags, seo_keywords, author, is_featured, published, published_at, cover_path, meta_title, meta_description, canonical_url, social_image_path, seo_author, article_section, schema_publisher";
+  "id, slug, title, excerpt, body, body_html, category, tags, seo_keywords, author, is_featured, published, published_at, cover_path, cover_fit, cover_position, meta_title, meta_description, canonical_url, social_image_path, seo_author, article_section, schema_publisher";
 const pathSchema = z
   .string()
   .max(300)
@@ -153,13 +168,37 @@ export const getSplashSlides = createServerFn({ method: "GET" }).handler(
 );
 
 async function hydrateNews(rows: any[]): Promise<NewsItem[]> {
-  const urls = await signPaths(rows.flatMap((r) => [r.cover_path, r.social_image_path]));
+  const postIds = rows.map((r) => r.id).filter(Boolean);
+  const { data: mediaRows } = postIds.length
+    ? await (publicClient() as any)
+        .from("news_post_media")
+        .select("id,post_id,sort,kind,storage_path,external_url,alt_text,caption,mime_type")
+        .in("post_id", postIds)
+        .order("sort")
+        .order("created_at")
+    : { data: [] };
+  const media = (mediaRows ?? []) as any[];
+  const urls = await signPaths([
+    ...rows.flatMap((r) => [r.cover_path, r.social_image_path]),
+    ...media.map((r) => r.storage_path),
+  ]);
+  const byPost = new Map<string, NewsMedia[]>();
+  for (const r of media) {
+    const item = {
+      ...r,
+      media_url: r.storage_path ? (urls.get(r.storage_path) ?? null) : r.external_url,
+    } as NewsMedia;
+    byPost.set(r.post_id, [...(byPost.get(r.post_id) ?? []), item]);
+  }
   return Promise.all(
     rows.map(async (r) => ({
       ...r,
       body_html: await hydrateHtml(r.body_html),
       cover_url: r.cover_path ? (urls.get(r.cover_path) ?? null) : null,
       social_image_url: r.social_image_path ? (urls.get(r.social_image_path) ?? null) : null,
+      cover_fit: r.cover_fit === "cover" ? "cover" : "contain",
+      cover_position: r.cover_position || "center",
+      gallery: byPost.get(r.id) ?? [],
     })),
   );
 }
@@ -386,12 +425,28 @@ export const saveNews = createServerFn({ method: "POST" })
         seo_author: opt(80),
         article_section: opt(80),
         schema_publisher: opt(80),
+        cover_fit: z.enum(["contain", "cover"]).default("contain"),
+        cover_position: z.string().trim().max(40).default("center"),
+        media: z
+          .array(
+            z.object({
+              sort: z.number().int().min(0).max(99),
+              kind: z.enum(["image", "video", "youtube"]),
+              storage_path: pathSchema,
+              external_url: opt(500),
+              alt_text: opt(180),
+              caption: opt(300),
+              mime_type: opt(120),
+            }),
+          )
+          .max(30)
+          .default([]),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const { id, ...rest } = data;
+    const { id, media, ...rest } = data;
     const slug = rest.slug || `${safeSlug(rest.title)}-${Date.now().toString(36).slice(-4)}`;
     const row = {
       ...rest,
@@ -422,6 +477,29 @@ export const saveNews = createServerFn({ method: "POST" })
           ? "That web address is already used"
           : r.error.message || "Could not save article",
       );
+    let postId = id;
+    if (!postId) {
+      const { data: created } = await (context.supabase as any)
+        .from("news_posts")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      postId = created?.id;
+    }
+    if (postId) {
+      const mediaRows = media
+        .filter((item) =>
+          item.kind === "youtube" ? Boolean(item.external_url) : Boolean(item.storage_path),
+        )
+        .map((item) => ({ ...item, post_id: postId }));
+      await (context.supabase as any).from("news_post_media").delete().eq("post_id", postId);
+      if (mediaRows.length) {
+        const mediaResult = await (context.supabase as any)
+          .from("news_post_media")
+          .insert(mediaRows);
+        if (mediaResult.error) throw new Error("Could not save article gallery");
+      }
+    }
     const normalizedTags = [...new Set((rest.tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
     if (normalizedTags.length) {
       await (context.supabase as any).from("content_tags").upsert(

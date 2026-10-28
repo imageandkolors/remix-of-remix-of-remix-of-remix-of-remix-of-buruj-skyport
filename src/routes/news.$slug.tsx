@@ -1,10 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronRight, Clock } from "lucide-react";
 import { newsArticleQuery, newsQuery } from "@/lib/queries";
 import { NewsCover, fmtNewsDate } from "@/components/site/NewsList";
 import { AdSlot, SITE_URL, ShareBar, readingMinutes } from "@/components/site/NewsExtras";
 import { Button } from "@/components/ui/button";
+import { MediaLightbox, MediaThumb, type LightboxItem } from "@/components/site/MediaLightbox";
 
 export const Route = createFileRoute("/news/$slug")({
   loader: async ({ context, params }) => {
@@ -125,6 +127,7 @@ function Article() {
   const { slug } = Route.useParams();
   const { data: a } = useSuspenseQuery(newsArticleQuery(slug));
   const { data: all } = useSuspenseQuery(newsQuery);
+  const [activeMedia, setActiveMedia] = useState<LightboxItem | null>(null);
   if (!a) return null;
   const url = `${SITE_URL}/news/${a.slug}`;
   const sameCat = all.filter((n) => n.id !== a.id && n.category === a.category);
@@ -133,6 +136,30 @@ function Article() {
     ...all.filter((n) => n.id !== a.id && n.category !== a.category),
   ].slice(0, 4);
   const more = all.filter((n) => n.id !== a.id).slice(0, 8);
+  const storyMedia: LightboxItem[] = [
+    ...(a.cover_url
+      ? [
+          {
+            id: `${a.id}-cover`,
+            title: a.title,
+            caption: "Cover image",
+            kind: "image" as const,
+            media_url: a.cover_url,
+            external_url: null,
+          },
+        ]
+      : []),
+    ...a.gallery.map((item) => ({
+      id: item.id,
+      title: a.title,
+      caption: item.caption,
+      kind: item.kind,
+      media_url: item.media_url,
+      external_url: item.external_url,
+    })),
+  ];
+  const openMedia = (item: LightboxItem) => setActiveMedia(item);
+  const mediaIndex = activeMedia ? storyMedia.findIndex((item) => item.id === activeMedia.id) : -1;
   const paras = (a.body ?? "").split(/\n\s*\n/).filter(Boolean);
   const mid = Math.min(3, paras.length);
 
@@ -186,13 +213,38 @@ function Article() {
 
           {a.cover_url && (
             <figure className="mt-6">
-              <div className="aspect-[16/9] overflow-hidden rounded-lg">
-                <NewsCover src={a.cover_url} title={a.title} />
-              </div>
+              <button
+                type="button"
+                className="block w-full overflow-hidden rounded-lg bg-muted text-left"
+                onClick={() => openMedia(storyMedia[0]!)}
+                aria-label="Open cover image"
+              >
+                <img
+                  src={a.cover_url}
+                  alt={a.title}
+                  className="max-h-[640px] w-full object-contain"
+                  style={{ objectFit: a.cover_fit, objectPosition: a.cover_position }}
+                />
+              </button>
               <figcaption className="mt-2 text-xs text-muted-foreground">
-                {a.title} · Photo: Buruj Sports Academy
+                {a.title} · Photo: Buruj Sports Academy · Click to enlarge
               </figcaption>
             </figure>
+          )}
+
+          {a.gallery.length > 0 && (
+            <section className="mt-6" aria-label="Story gallery">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {a.gallery.map((item) => {
+                  const lightboxItem = storyMedia.find((media) => media.id === item.id)!;
+                  return (
+                    <div key={item.id} className="aspect-video overflow-hidden rounded-lg">
+                      <MediaThumb item={lightboxItem} onClick={() => openMedia(lightboxItem)} />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           )}
 
           <div className="prose prose-lg mt-8 max-w-none text-foreground prose-headings:font-display prose-headings:uppercase prose-headings:text-navy prose-a:text-primary prose-img:rounded-lg prose-video:rounded-lg">
@@ -300,6 +352,16 @@ function Article() {
           </div>
         </section>
       )}
+      <MediaLightbox
+        item={activeMedia}
+        onClose={() => setActiveMedia(null)}
+        onPrevious={mediaIndex > 0 ? () => setActiveMedia(storyMedia[mediaIndex - 1]!) : undefined}
+        onNext={
+          mediaIndex >= 0 && mediaIndex < storyMedia.length - 1
+            ? () => setActiveMedia(storyMedia[mediaIndex + 1]!)
+            : undefined
+        }
+      />
     </article>
   );
 }
