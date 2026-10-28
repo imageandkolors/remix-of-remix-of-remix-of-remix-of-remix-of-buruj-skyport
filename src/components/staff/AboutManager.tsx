@@ -267,11 +267,9 @@ function AboutEditor({
           )}
         </div>
         {s.image_url && (
-          <img
-            src={s.image_url}
-            alt="Preview"
-            className="mt-3 h-36 w-full rounded-lg object-cover"
-          />
+          <div className="mt-3 flex h-36 w-full items-center justify-center overflow-hidden rounded-lg bg-muted/30 p-2">
+            <img src={s.image_url} alt="Preview" className="h-full w-full object-contain" />
+          </div>
         )}
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">

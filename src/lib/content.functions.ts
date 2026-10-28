@@ -71,6 +71,16 @@ export type SocialFeed = {
   is_active: boolean;
   display_limit: number;
   sort: number;
+  items: SocialFeedItem[];
+};
+export type SocialFeedItem = {
+  id?: string;
+  feed_id?: string;
+  title: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  sort: number;
+  is_active: boolean;
 };
 export type GalleryMedia = {
   id: string;
@@ -86,6 +96,28 @@ export type GalleryMedia = {
   media_url: string | null;
   created_at: string;
 };
+
+function youtubeId(url: string | null | undefined) {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/i,
+  );
+  return match?.[1] ?? null;
+}
+
+function hydrateSocialFeedRows(rows: any[], itemRows: any[] = []): SocialFeed[] {
+  const byFeed = new Map<string, SocialFeedItem[]>();
+  for (const row of itemRows) {
+    const thumbnail =
+      row.thumbnail_url ||
+      (youtubeId(row.video_url)
+        ? `https://i.ytimg.com/vi/${youtubeId(row.video_url)}/hqdefault.jpg`
+        : null);
+    const item = { ...row, thumbnail_url: thumbnail } as SocialFeedItem;
+    byFeed.set(row.feed_id, [...(byFeed.get(row.feed_id) ?? []), item]);
+  }
+  return rows.map((row) => ({ ...row, items: byFeed.get(row.id) ?? [] }));
+}
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
@@ -273,7 +305,15 @@ export const listContentAdmin = createServerFn({ method: "GET" })
       })),
       news,
       categories: c.data ?? [],
-      feeds: f.data ?? [],
+      feeds: hydrateSocialFeedRows(
+        f.data ?? [],
+        (
+          await (context.supabase as any)
+            .from("social_feed_items")
+            .select("id,feed_id,title,video_url,thumbnail_url,sort,is_active")
+            .order("sort")
+        ).data ?? [],
+      ),
       tags: t.data ?? [],
       gallery: await hydrateGallery(g.data ?? []),
     };
@@ -532,28 +572,86 @@ export const saveSocialFeed = createServerFn({ method: "POST" })
         is_active: z.boolean(),
         display_limit: z.number().int().min(1).max(24),
         sort: z.number().int().min(0).max(99),
+        items: z
+          .array(
+            z.object({
+              title: z.string().trim().min(1).max(160),
+              video_url: z.string().url().max(500),
+              thumbnail_url: z.string().url().max(500).nullable().optional(),
+              sort: z.number().int().min(0).max(99),
+              is_active: z.boolean(),
+            }),
+          )
+          .max(24)
+          .default([]),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const { id, ...row } = data;
+    const { id, items, ...row } = data;
     const r = id
       ? await (context.supabase as any).from("social_feeds").update(row).eq("id", id)
       : await (context.supabase as any).from("social_feeds").insert(row);
     if (r.error) throw new Error("Could not save feed");
+    let feedId = id;
+    if (!feedId) {
+      const { data: created } = await (context.supabase as any)
+        .from("social_feeds")
+        .select("id")
+        .eq("label", row.label)
+        .eq("source_url", row.source_url)
+        .maybeSingle();
+      feedId = created?.id;
+    }
+    if (feedId) {
+      await (context.supabase as any).from("social_feed_items").delete().eq("feed_id", feedId);
+      if (items.length) {
+        const result = await (context.supabase as any)
+          .from("social_feed_items")
+          .insert(items.map((item) => ({ ...item, feed_id: feedId })));
+        if (result.error) throw new Error("Could not save social feed videos");
+      }
+    }
+    return { ok: true };
+  });
+
+export const deleteSocialFeed = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { error } = await (context.supabase as any)
+      .from("social_feeds")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error("Could not delete social feed");
     return { ok: true };
   });
 
 export const getSocialFeeds = createServerFn({ method: "GET" }).handler(
   async (): Promise<SocialFeed[]> => {
-    const { data } = await (publicClient() as any)
+    const client = publicClient() as any;
+    const { data } = await client
       .from("social_feeds")
       .select("id,platform,label,source_url,is_active,display_limit,sort")
       .eq("is_active", true)
       .order("sort")
       .limit(12);
-    return data ?? [];
+    const feeds = data ?? [];
+    const ids = feeds.map((feed: any) => feed.id);
+    const { data: items } = ids.length
+      ? await client
+          .from("social_feed_items")
+          .select("id,feed_id,title,video_url,thumbnail_url,sort,is_active")
+          .in("feed_id", ids)
+          .eq("is_active", true)
+          .order("sort")
+      : { data: [] };
+    return hydrateSocialFeedRows(feeds, items ?? []).map((feed) => ({
+      ...feed,
+      items: feed.items.slice(0, feed.display_limit),
+    }));
   },
 );
 

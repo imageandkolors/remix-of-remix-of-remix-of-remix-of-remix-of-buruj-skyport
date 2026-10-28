@@ -19,12 +19,14 @@ import {
   saveSlide,
   deleteSlide,
   saveSocialFeed,
+  deleteSocialFeed,
   saveCategory,
   saveTag,
   type NewsItem,
   type NewsMedia,
   type SplashSlide,
   type SocialFeed,
+  type SocialFeedItem,
 } from "@/lib/content.functions";
 
 export const Route = createFileRoute("/_authenticated/content")({ component: ContentAdminPage });
@@ -1053,6 +1055,13 @@ function FeedManager({ feeds, onRefresh }: { feeds: SocialFeed[]; onRefresh: () 
           is_active: f.is_active ?? true,
           display_limit: Number(f.display_limit ?? 6),
           sort: Number(f.sort ?? 0),
+          items: (f.items ?? []).map((item, index) => ({
+            title: item.title,
+            video_url: item.video_url,
+            thumbnail_url: item.thumbnail_url,
+            sort: index,
+            is_active: item.is_active,
+          })),
         },
       });
       toast.success("Feed saved");
@@ -1074,7 +1083,13 @@ function FeedManager({ feeds, onRefresh }: { feeds: SocialFeed[]; onRefresh: () 
         </div>
         <Button
           onClick={() =>
-            setF({ platform: "youtube", is_active: true, display_limit: 6, sort: feeds.length })
+            setF({
+              platform: "youtube",
+              is_active: true,
+              display_limit: 6,
+              sort: feeds.length,
+              items: [],
+            })
           }
         >
           <Plus />
@@ -1089,12 +1104,30 @@ function FeedManager({ feeds, onRefresh }: { feeds: SocialFeed[]; onRefresh: () 
           <div>
             <p className="font-semibold">{x.label}</p>
             <p className="text-xs text-muted-foreground">
-              {x.platform} · {x.source_url}
+              {x.platform} · {x.is_active ? "active on homepage" : "hidden from homepage"} ·{" "}
+              {x.items.length} video{x.items.length === 1 ? "" : "s"}
             </p>
           </div>
-          <Button variant="outline" onClick={() => setF(x)}>
-            Edit
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setF(x)}>
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                if (!confirm("Delete this social feed and its videos?")) return;
+                try {
+                  await deleteSocialFeed({ data: { id: x.id } });
+                  toast.success("Social feed deleted");
+                  onRefresh();
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            >
+              <Trash2 />
+            </Button>
+          </div>
         </div>
       ))}
       {f && (
@@ -1131,6 +1164,107 @@ function FeedManager({ feeds, onRefresh }: { feeds: SocialFeed[]; onRefresh: () 
                 onChange={(e) => setF({ ...f, display_limit: Number(e.target.value) })}
               />
             </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={f.is_active ?? true}
+                onChange={(e) => setF({ ...f, is_active: e.target.checked })}
+              />
+              Show this feed on the homepage
+            </label>
+          </div>
+          <div className="mt-5 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">Homepage video cards</h3>
+                <p className="text-xs text-muted-foreground">
+                  Add two or three YouTube videos. Thumbnails are generated automatically, or you
+                  can provide a custom image URL.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setF({
+                    ...f,
+                    items: [
+                      ...(f.items ?? []),
+                      {
+                        title: "Academy video",
+                        video_url: "",
+                        thumbnail_url: null,
+                        sort: f.items?.length ?? 0,
+                        is_active: true,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus />
+                Add video
+              </Button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(f.items ?? []).map((item, index) => (
+                <div
+                  key={`${item.id ?? "new"}-${index}`}
+                  className="grid gap-2 rounded-lg bg-muted/30 p-3 lg:grid-cols-[1fr_1.4fr_1fr_auto]"
+                >
+                  <Input
+                    value={item.title}
+                    onChange={(e) => {
+                      const items = [...(f.items ?? [])];
+                      items[index] = { ...item, title: e.target.value };
+                      setF({ ...f, items });
+                    }}
+                    placeholder="Video title"
+                  />
+                  <Input
+                    value={item.video_url}
+                    onChange={(e) => {
+                      const items = [...(f.items ?? [])];
+                      items[index] = { ...item, video_url: e.target.value };
+                      setF({ ...f, items });
+                    }}
+                    placeholder="YouTube video URL"
+                  />
+                  <Input
+                    value={item.thumbnail_url ?? ""}
+                    onChange={(e) => {
+                      const items = [...(f.items ?? [])];
+                      items[index] = { ...item, thumbnail_url: e.target.value || null };
+                      setF({ ...f, items });
+                    }}
+                    placeholder="Optional thumbnail URL"
+                  />
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={item.is_active}
+                        onChange={(e) => {
+                          const items = [...(f.items ?? [])];
+                          items[index] = { ...item, is_active: e.target.checked };
+                          setF({ ...f, items });
+                        }}
+                      />
+                      Live
+                    </label>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        setF({ ...f, items: (f.items ?? []).filter((_, i) => i !== index) })
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="mt-4 flex gap-2">
             <Button onClick={() => void save()}>

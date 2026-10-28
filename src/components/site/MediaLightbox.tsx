@@ -5,7 +5,7 @@ import type { GalleryMedia } from "@/lib/content.functions";
 export type LightboxItem = Pick<
   GalleryMedia,
   "id" | "title" | "caption" | "kind" | "media_url" | "external_url"
-> & { media_url: string | null };
+> & { media_url: string | null; thumbnail_url?: string | null };
 
 function youtubeEmbed(url: string | null | undefined) {
   if (!url) return null;
@@ -146,8 +146,17 @@ export function MediaThumb({ item, onClick }: { item: LightboxItem; onClick: () 
         />
       )}
       {item.kind === "youtube" && embed && (
-        <div className="flex h-full w-full items-center justify-center bg-navy">
-          <Play className="h-14 w-14 rounded-full bg-gold p-4 text-gold-foreground" />
+        <div className="relative h-full w-full bg-navy">
+          {item.thumbnail_url && (
+            <img
+              src={item.thumbnail_url}
+              alt=""
+              className="h-full w-full object-cover opacity-80"
+            />
+          )}
+          <div className="absolute inset-0 grid place-items-center">
+            <Play className="h-14 w-14 rounded-full bg-gold p-4 text-gold-foreground" />
+          </div>
         </div>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/10 to-transparent" />

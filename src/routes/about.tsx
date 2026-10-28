@@ -131,12 +131,14 @@ function AboutSectionView({ section }: { section: AboutSection }) {
         </div>
         {image && (
           <Reveal>
-            <img
-              src={image}
-              alt={section.image_alt || section.title}
-              className="h-full max-h-[600px] w-full rounded-xl object-cover"
-              loading="lazy"
-            />
+            <div className="flex min-h-[280px] max-h-[600px] w-full items-center justify-center overflow-hidden rounded-xl bg-muted/30 p-2 sm:min-h-[380px]">
+              <img
+                src={image}
+                alt={section.image_alt || section.title}
+                className="h-full max-h-[580px] w-full object-contain"
+                loading="lazy"
+              />
+            </div>
           </Reveal>
         )}
       </section>
@@ -156,12 +158,14 @@ function AboutSectionView({ section }: { section: AboutSection }) {
         <h2 className="mt-2 text-4xl font-extrabold uppercase">{section.title}</h2>
         <div className="mt-8 grid gap-6 md:grid-cols-2">{inner}</div>
         {image && (
-          <img
-            src={image}
-            alt={section.image_alt || section.title}
-            className="mt-8 max-h-[460px] w-full rounded-xl object-cover"
-            loading="lazy"
-          />
+          <div className="mt-8 flex max-h-[460px] min-h-[240px] w-full items-center justify-center overflow-hidden rounded-xl bg-muted/30 p-2">
+            <img
+              src={image}
+              alt={section.image_alt || section.title}
+              className="h-full max-h-[440px] w-full object-contain"
+              loading="lazy"
+            />
+          </div>
         )}
       </div>
     </section>
