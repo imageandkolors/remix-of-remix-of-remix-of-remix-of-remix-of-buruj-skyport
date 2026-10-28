@@ -37,7 +37,11 @@ export const Route = createFileRoute("/news/$slug")({
           { name: "robots", content: "noindex" },
         ],
       };
-    const url = loaderData.canonical || `${SITE_URL}/news/${params.slug}`;
+    const rawCanonical = loaderData.canonical;
+    const url =
+      rawCanonical && !rawCanonical.includes("lovable.app")
+        ? rawCanonical
+        : `${SITE_URL}/news/${params.slug}`;
     const t = loaderData.metaTitle || `${loaderData.title} — Buruj News`;
     const d =
       loaderData.metaDescription ||
@@ -53,6 +57,7 @@ export const Route = createFileRoute("/news/$slug")({
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
         { property: "og:site_name", content: "Buruj Sports Academy" },
+        ...(img ? [{ property: "og:image:alt", content: loaderData.title }] : []),
         ...(loaderData.published
           ? [{ property: "article:published_time", content: loaderData.published }]
           : []),
@@ -64,7 +69,10 @@ export const Route = createFileRoute("/news/$slug")({
         ...(img
           ? [
               { property: "og:image", content: img },
+              { property: "og:image:secure_url", content: img },
+              { property: "og:image:type", content: "image/jpeg" },
               { name: "twitter:image", content: img },
+              { name: "twitter:image:alt", content: loaderData.title },
             ]
           : []),
       ],
@@ -129,7 +137,10 @@ function Article() {
   const { data: all } = useSuspenseQuery(newsQuery);
   const [activeMedia, setActiveMedia] = useState<LightboxItem | null>(null);
   if (!a) return null;
-  const url = `${SITE_URL}/news/${a.slug}`;
+  const url =
+    a.canonical_url && !a.canonical_url.includes("lovable.app")
+      ? a.canonical_url
+      : `${SITE_URL}/news/${a.slug}`;
   const sameCat = all.filter((n) => n.id !== a.id && n.category === a.category);
   const related = [
     ...sameCat,
@@ -207,7 +218,7 @@ function Article() {
                   {readingMinutes(a.body)} min read
                 </span>
               </p>
-              <ShareBar url={url} title={a.title} />
+              <ShareBar url={url} title={a.title} excerpt={a.excerpt} />
             </div>
           </header>
 
@@ -282,7 +293,7 @@ function Article() {
 
           <div className="mt-10 rounded-lg border bg-secondary p-4 sm:p-5">
             <p className="font-display text-lg font-bold uppercase text-navy">Share this story</p>
-            <ShareBar url={url} title={a.title} className="mt-3" />
+            <ShareBar url={url} title={a.title} excerpt={a.excerpt} className="mt-3" />
           </div>
         </div>
 
