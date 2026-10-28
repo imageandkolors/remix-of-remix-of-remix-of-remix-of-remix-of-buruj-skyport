@@ -22,6 +22,7 @@ import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated/content'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedManageProgrammesRouteImport } from './routes/_authenticated/manage-programmes'
+import { Route as AuthenticatedPageSettingsRouteImport } from './routes/_authenticated/page-settings'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as NewsIndexRouteImport } from './routes/news.index'
@@ -96,6 +97,12 @@ const AuthenticatedManageProgrammesRoute =
     path: '/manage-programmes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPageSettingsRoute =
+  AuthenticatedPageSettingsRouteImport.update({
+    id: '/page-settings',
+    path: '/page-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/content': typeof AuthenticatedContentRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
+  '/page-settings': typeof AuthenticatedPageSettingsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/content': typeof AuthenticatedContentRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manage-programmes': typeof AuthenticatedManageProgrammesRoute
+  '/page-settings': typeof AuthenticatedPageSettingsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/manage-programmes': typeof AuthenticatedManageProgrammesRoute
+  '/_authenticated/page-settings': typeof AuthenticatedPageSettingsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/content'
     | '/dashboard'
     | '/manage-programmes'
+    | '/page-settings'
     | '/settings'
     | '/squad'
     | '/news/$slug'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/content'
     | '/dashboard'
     | '/manage-programmes'
+    | '/page-settings'
     | '/settings'
     | '/squad'
     | '/news/$slug'
@@ -265,6 +277,7 @@ export interface FileRouteTypes {
     | '/_authenticated/content'
     | '/_authenticated/dashboard'
     | '/_authenticated/manage-programmes'
+    | '/_authenticated/page-settings'
     | '/_authenticated/settings'
     | '/_authenticated/squad'
     | '/news/$slug'
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedManageProgrammesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/page-settings': {
+      id: '/_authenticated/page-settings'
+      path: '/page-settings'
+      fullPath: '/page-settings'
+      preLoaderRoute: typeof AuthenticatedPageSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -450,6 +470,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedManageProgrammesRoute: typeof AuthenticatedManageProgrammesRoute
+  AuthenticatedPageSettingsRoute: typeof AuthenticatedPageSettingsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
@@ -458,6 +479,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedManageProgrammesRoute: AuthenticatedManageProgrammesRoute,
+  AuthenticatedPageSettingsRoute: AuthenticatedPageSettingsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }

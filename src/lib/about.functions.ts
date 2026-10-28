@@ -43,6 +43,12 @@ async function signImages(paths: (string | null | undefined)[]) {
   const list = [...new Set(paths.filter((x): x is string => !!x))];
   const map = new Map<string, string>();
   if (!list.length) return map;
+  if (!process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+    const base = process.env["SUPABASE_URL"];
+    if (base)
+      for (const path of list) map.set(path, `${base}/storage/v1/object/public/site-media/${path}`);
+    return map;
+  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin.storage
     .from("site-media")

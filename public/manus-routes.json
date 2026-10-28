@@ -1,0 +1,25 @@
+{
+  "routes": [
+    { "path": "/", "title": "Home" },
+    { "path": "/about", "title": "About Us" },
+    { "path": "/admissions", "title": "Admissions" },
+    { "path": "/apply", "title": "Apply" },
+    { "path": "/contact", "title": "Contact" },
+    { "path": "/gallery", "title": "Gallery" },
+    { "path": "/news", "title": "News" },
+    { "path": "/news/:slug", "title": "News Article" },
+    { "path": "/players", "title": "Players" },
+    { "path": "/players/:slug", "title": "Player Profile" },
+    { "path": "/portal", "title": "Portal" },
+    { "path": "/privacy-policy", "title": "Privacy Policy" },
+    { "path": "/programmes", "title": "Programmes" },
+    { "path": "/programmes/:slug", "title": "Programme" },
+    { "path": "/auth", "title": "Sign In" },
+    { "path": "/dashboard", "title": "Admin Dashboard" },
+    { "path": "/content", "title": "Content Manager" },
+    { "path": "/manage-programmes", "title": "Programme Manager" },
+    { "path": "/page-settings", "title": "Page Settings" },
+    { "path": "/settings", "title": "Settings" },
+    { "path": "/squad", "title": "Squad Manager" }
+  ]
+}

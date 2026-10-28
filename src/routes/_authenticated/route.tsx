@@ -6,7 +6,15 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { FileText, GraduationCap, LayoutDashboard, LogOut, Settings, Users } from "lucide-react";
+import {
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_NAV = [
@@ -15,6 +23,7 @@ const ADMIN_NAV = [
   { to: "/manage-programmes", label: "Programmes", icon: GraduationCap },
   { to: "/content", label: "Content", icon: FileText },
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/page-settings", label: "Contact & SEO", icon: SlidersHorizontal },
 ] as const;
 
 export const Route = createFileRoute("/_authenticated")({

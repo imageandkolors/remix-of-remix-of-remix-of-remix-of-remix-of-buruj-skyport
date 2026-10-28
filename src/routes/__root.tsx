@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -19,6 +21,7 @@ import { TrialSheetProvider } from "@/components/site/TrialForm";
 import { MobileTabBar } from "@/components/app/MobileTabBar";
 import { InstallPrompt } from "@/components/app/InstallPrompt";
 import { CookieConsent } from "@/components/app/CookieConsent";
+import { getPageSeo } from "@/lib/page-settings.functions";
 
 function NotFoundComponent() {
   return (
@@ -91,7 +94,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Buruj BSA" },
       { title: "Buruj Sports Academy" },
-      { name: "description", content: "Elite football development and residential Play & Study in Ikorodu, Lagos." },
+      {
+        name: "description",
+        content: "Elite football development and residential Play & Study in Ikorodu, Lagos.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -135,6 +141,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <TrialSheetProvider>
         <Header />
+        <ManagedSeo />
         <main>
           <Outlet />
         </main>
@@ -148,4 +155,71 @@ function RootComponent() {
       <CookieConsent />
     </QueryClientProvider>
   );
+}
+
+function ManagedSeo() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pageKey =
+    pathname === "/"
+      ? "home"
+      : pathname.startsWith("/about")
+        ? "about"
+        : pathname.startsWith("/contact")
+          ? "contact"
+          : pathname.startsWith("/programmes")
+            ? "programmes"
+            : pathname.startsWith("/players")
+              ? "players"
+              : pathname.startsWith("/news")
+                ? "news"
+                : pathname.startsWith("/gallery")
+                  ? "gallery"
+                  : pathname.startsWith("/admissions")
+                    ? "admissions"
+                    : pathname.startsWith("/portal")
+                      ? "portal"
+                      : pathname.startsWith("/privacy-policy")
+                        ? "privacy"
+                        : null;
+  const { data } = useQuery({
+    queryKey: ["page-seo-runtime", pageKey],
+    queryFn: () => getPageSeo({ data: { page_key: pageKey! } }),
+    enabled: Boolean(pageKey),
+    staleTime: 60_000,
+  });
+  useEffect(() => {
+    if (!data) return;
+    document.title = data.title;
+    const update = (selector: string, attribute: string, value: string | null) => {
+      if (!value) return;
+      let element = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attribute, selector.match(/['"]([^'"]+)['"]/)?.[1] || "");
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", value);
+    };
+    update('meta[name="description"]', "name", data.description);
+    update('meta[name="keywords"]', "name", data.keywords);
+    update('meta[name="robots"]', "name", data.robots);
+    update('meta[property="og:title"]', "property", data.og_title || data.title);
+    update('meta[property="og:description"]', "property", data.og_description || data.description);
+    update('meta[property="og:type"]', "property", data.og_type);
+    update('meta[property="og:image"]', "property", data.og_image_url);
+    update('meta[name="twitter:card"]', "name", data.twitter_card);
+    update('meta[name="twitter:title"]', "name", data.og_title || data.title);
+    update('meta[name="twitter:description"]', "name", data.og_description || data.description);
+    update('meta[name="twitter:image"]', "name", data.og_image_url);
+    if (data.canonical_url) {
+      let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "canonical";
+        document.head.appendChild(link);
+      }
+      link.href = data.canonical_url;
+    }
+  }, [data]);
+  return null;
 }
