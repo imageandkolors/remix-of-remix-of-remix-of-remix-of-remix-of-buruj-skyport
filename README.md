@@ -3,6 +3,7 @@
 Build the full-stack web application for Buruj Sports Academy based on the attached prompt pack (buruj prompt.pdf).
 
 Key requirements:
+
 1. Brand Design System & Tokens:
    - Palette: Sky Blue, Vibrant Gold, Deep Navy/Midnight, and Clean White inspired by the official Buruj FC & Sports Academy crest.
    - Typography: Barlow Condensed for athletic display headlines and badges; Barlow for clean body copy.
@@ -41,3 +42,31 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Self-hosting on Namecheap cPanel (Node.js)
+
+This is a full-stack TanStack Start application with server-rendered routes and server functions. It must run as a Node.js application; uploading only a static `dist` folder is not sufficient.
+
+### Build and run locally
+
+Use Node.js 22.x (22.12 or newer). The Vite configuration pins Nitro to the `node-server` preset, and the production build emits `.output/server/index.mjs`.
+
+```sh
+npm install
+npm run build
+npm start
+```
+
+The `server.js` file is the cPanel startup shim. It imports the generated Nitro server, which listens on the `PORT` and `HOST` values supplied by the hosting environment.
+
+### Configure cPanel
+
+1. In **Setup Node.js App**, select Node.js 22 and use an application root such as `skyport-app`, outside `public_html`.
+2. Set the startup file to `server.js` and the application URL to the desired domain or subdomain. Back up any existing site before assigning the live domain to this app.
+3. Add the required environment variables from `.env.example` in the application settings. Public routes need `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; privileged admin/media operations also need `SUPABASE_SERVICE_ROLE_KEY`.
+4. Keep `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`, and cron secrets server-side. Never give them a `VITE_` prefix or commit a populated `.env` file. `VITE_*` values are embedded at build time, so rebuild after changing them.
+5. Install dependencies, run `npm run build` from the application root, then restart the Node.js app in cPanel.
+
+GitHub is optional. You can transfer the source with FTP or upload a ZIP through File Manager; Git integration only automates fetching future code changes.
+
+References: [Namecheap's Node.js app guide](https://www.namecheap.com/support/knowledgebase/article.aspx/10047/2182/how-to-work-with-nodejs-app/) and [TanStack Start's hosting guide](https://tanstack.com/start/latest/docs/framework/react/guide/hosting).
