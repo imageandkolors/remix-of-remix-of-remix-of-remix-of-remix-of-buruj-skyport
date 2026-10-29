@@ -31,12 +31,15 @@ export function normaliseSections(value: unknown): ProgrammeSection[] {
   return value.map((s) => ({
     title: String((s as ProgrammeSection)?.title ?? ""),
     body: String((s as ProgrammeSection)?.body ?? ""),
-    items: Array.isArray((s as ProgrammeSection)?.items) ? (s as ProgrammeSection).items.map(String) : [],
+    items: Array.isArray((s as ProgrammeSection)?.items)
+      ? (s as ProgrammeSection).items.map(String)
+      : [],
   }));
 }
 
 export function formatNaira(amount: number) {
-  if (amount >= 1_000_000) return `₦${(amount / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
+  if (amount >= 1_000_000)
+    return `₦${(amount / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
   return `₦${amount.toLocaleString()}`;
 }
 

@@ -92,7 +92,7 @@ export function Header() {
             </>
           ) : (
             <Button asChild variant="ghost" className="text-current hover:bg-white/10">
-              <Link to="/auth">
+              <Link to="/auth" search={{ redirect: "/dashboard" }}>
                 <LogIn className="h-4 w-4" />
                 Login
               </Link>
@@ -155,7 +155,7 @@ export function Header() {
               variant="outline"
               className="mt-2 justify-start border-current/30 text-current"
             >
-              <Link to="/auth" onClick={() => setOpen(false)}>
+              <Link to="/auth" search={{ redirect: "/dashboard" }} onClick={() => setOpen(false)}>
                 <LogIn className="h-4 w-4" />
                 Login
               </Link>

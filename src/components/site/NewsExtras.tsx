@@ -4,7 +4,8 @@ import { Check, Facebook, Link2, Linkedin, MessageCircle, Share2 } from "lucide-
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-export const SITE_URL = "https://remix-of-remix-of-remix-of-remix-of-beta-mauve.vercel.app";
+export const SITE_URL =
+  (import.meta.env["VITE_SITE_URL"] as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export function readingMinutes(body: string | null) {
   const words = (body ?? "").trim().split(/\s+/).filter(Boolean).length;
@@ -118,7 +119,7 @@ export function AdSlot({
   className,
 }: {
   format?: "leaderboard" | "rectangle" | "inline";
-  slot?: string;
+  slot?: string | undefined;
   className?: string;
 }) {
   const ref = useRef<HTMLModElement>(null);

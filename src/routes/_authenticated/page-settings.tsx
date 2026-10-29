@@ -139,7 +139,7 @@ function ContactManager() {
         )}
         {
           <div className="mt-5 grid gap-3">
-            {(q.data?.locations ?? []).map((item) => (
+            {(q.data?.locations ?? []).map((item: ContactLocation) => (
               <div
                 key={item.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"

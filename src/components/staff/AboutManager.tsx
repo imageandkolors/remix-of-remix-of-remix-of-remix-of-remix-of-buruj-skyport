@@ -50,6 +50,7 @@ export function AboutManager({
       </div>
       {editing && (
         <AboutEditor
+          key={editing.id || editing.section_key || "new-about-section"}
           initial={editing}
           onClose={() => setEditing(null)}
           onSaved={() => {

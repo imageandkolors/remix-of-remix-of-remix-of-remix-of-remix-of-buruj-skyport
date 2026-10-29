@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { cleanHtml } from "./html-sanitizer";
 
 export type SplashSlide = {
   id: string;
@@ -157,10 +158,11 @@ async function hydrateHtml(html: string | null | undefined) {
   if (!html) return html ?? null;
   const paths = [...html.matchAll(/data-storage-path=["']([^"']+)["']/g)].map((m) => m[1]);
   const urls = await signPaths(paths);
-  return html.replace(/data-storage-path=["']([^"']+)["']/g, (full, path) => {
+  const hydrated = html.replace(/data-storage-path=["']([^"']+)["']/g, (full, path) => {
     const url = urls.get(path);
     return url ? `src="${url}" data-storage-path="${path}"` : full;
   });
+  return cleanHtml(hydrated);
 }
 
 const NEWS_COLS =
@@ -421,12 +423,6 @@ export const deleteSlide = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const cleanHtml = (html: string) =>
-  html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/\son\w+=("[^"]*"|'[^']*')/gi, "")
-    .replace(/javascript:/gi, "")
-    .slice(0, 100000);
 const safeSlug = (value: string) =>
   value
     .toLowerCase()

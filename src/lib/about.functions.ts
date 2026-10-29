@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { cleanHtml } from "./html-sanitizer";
 
 export type AboutSection = {
   id: string;
@@ -56,12 +57,6 @@ async function signImages(paths: (string | null | undefined)[]) {
   for (const row of data ?? []) if (row.path && row.signedUrl) map.set(row.path, row.signedUrl);
   return map;
 }
-const cleanHtml = (html: string) =>
-  html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/\son\w+=("[^"]*"|'[^']*')/gi, "")
-    .replace(/javascript:/gi, "")
-    .slice(0, 100000);
 const path = z
   .string()
   .max(300)
@@ -74,6 +69,7 @@ async function hydrate(rows: any[]): Promise<AboutSection[]> {
   const urls = await signImages(rows.map((row) => row.image_path));
   return rows.map((row) => ({
     ...row,
+    body_html: cleanHtml(row.body_html ?? ""),
     image_url: row.image_path ? (urls.get(row.image_path) ?? null) : null,
   }));
 }

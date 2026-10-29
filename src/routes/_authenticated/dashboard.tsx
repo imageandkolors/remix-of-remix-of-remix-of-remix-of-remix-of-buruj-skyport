@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, ArrowUpRight, BarChart3, ClipboardList, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getStaffDashboard } from "@/lib/staff.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -37,34 +37,7 @@ const DEFAULT_DATA: DashboardData = {
 function DashboardPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["staff-dashboard"],
-    queryFn: async (): Promise<DashboardData> => {
-      const [recentResult, statusResult] = await Promise.all([
-        supabase
-          .from("applications")
-          .select("id, status, created_at, player_name, programme, current_school, guardian_email")
-          .order("created_at", { ascending: false })
-          .limit(12),
-        supabase.from("applications").select("status"),
-      ]);
-
-      if (recentResult.error) throw recentResult.error;
-      if (statusResult.error) throw statusResult.error;
-
-      const recent = (recentResult.data ?? []) as Applicant[];
-      const stats: DashboardStats = (statusResult.data ?? []).reduce(
-        (acc, row) => {
-          acc.total += 1;
-          const status = (row.status ?? "pending").toLowerCase();
-          if (status === "accepted") acc.accepted += 1;
-          if (status === "declined") acc.declined += 1;
-          if (!["accepted", "declined"].includes(status)) acc.pending += 1;
-          return acc;
-        },
-        { total: 0, accepted: 0, pending: 0, declined: 0 },
-      );
-
-      return { stats, recent };
-    },
+    queryFn: async (): Promise<DashboardData> => getStaffDashboard(),
   });
 
   const dashboard = data ?? DEFAULT_DATA;

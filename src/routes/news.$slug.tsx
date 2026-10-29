@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronRight, Clock } from "lucide-react";
 import { newsArticleQuery, newsQuery } from "@/lib/queries";
 import { NewsCover, fmtNewsDate } from "@/components/site/NewsList";
@@ -39,9 +39,13 @@ export const Route = createFileRoute("/news/$slug")({
       };
     const rawCanonical = loaderData.canonical;
     const url =
-      rawCanonical && !rawCanonical.includes("lovable.app")
+      rawCanonical &&
+      /^https?:\/\//i.test(rawCanonical) &&
+      !/(lovable\.app|vercel\.app)/i.test(rawCanonical)
         ? rawCanonical
-        : `${SITE_URL}/news/${params.slug}`;
+        : SITE_URL
+          ? `${SITE_URL}/news/${params.slug}`
+          : null;
     const t = loaderData.metaTitle || `${loaderData.title} — Buruj News`;
     const d =
       loaderData.metaDescription ||
@@ -55,7 +59,7 @@ export const Route = createFileRoute("/news/$slug")({
         { property: "og:title", content: loaderData.title },
         { property: "og:description", content: d },
         { property: "og:type", content: "article" },
-        { property: "og:url", content: url },
+        ...(url ? [{ property: "og:url", content: url }] : []),
         { property: "og:site_name", content: "Buruj Sports Academy" },
         ...(img ? [{ property: "og:image:alt", content: loaderData.title }] : []),
         ...(loaderData.published
@@ -76,7 +80,7 @@ export const Route = createFileRoute("/news/$slug")({
             ]
           : []),
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: url ? [{ rel: "canonical", href: url }] : [],
       scripts: [
         {
           type: "application/ld+json",
@@ -92,9 +96,11 @@ export const Route = createFileRoute("/news/$slug")({
             publisher: {
               "@type": "Organization",
               name: loaderData.publisher || "Buruj Sports Academy",
-              logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-192.png` },
+              ...(SITE_URL
+                ? { logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-192.png` } }
+                : {}),
             },
-            mainEntityOfPage: { "@type": "WebPage", "@id": url },
+            ...(url ? { mainEntityOfPage: { "@type": "WebPage", "@id": url } } : {}),
             articleSection: loaderData.section || loaderData.category,
             keywords: loaderData.tags,
           }),
@@ -105,9 +111,24 @@ export const Route = createFileRoute("/news/$slug")({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-              { "@type": "ListItem", position: 2, name: "News", item: `${SITE_URL}/news` },
-              { "@type": "ListItem", position: 3, name: loaderData.title, item: url },
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Home",
+                ...(SITE_URL ? { item: SITE_URL } : {}),
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "News",
+                ...(SITE_URL ? { item: `${SITE_URL}/news` } : {}),
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: loaderData.title,
+                ...(url ? { item: url } : {}),
+              },
             ],
           }),
         },
@@ -134,13 +155,17 @@ export const Route = createFileRoute("/news/$slug")({
 function Article() {
   const { slug } = Route.useParams();
   const { data: a } = useSuspenseQuery(newsArticleQuery(slug));
-  const { data: all } = useSuspenseQuery(newsQuery);
+  const { data: all = [] } = useQuery(newsQuery);
   const [activeMedia, setActiveMedia] = useState<LightboxItem | null>(null);
   if (!a) return null;
   const url =
-    a.canonical_url && !a.canonical_url.includes("lovable.app")
+    a.canonical_url &&
+    /^https?:\/\//i.test(a.canonical_url) &&
+    !/(lovable\.app|vercel\.app)/i.test(a.canonical_url)
       ? a.canonical_url
-      : `${SITE_URL}/news/${a.slug}`;
+      : SITE_URL
+        ? `${SITE_URL}/news/${a.slug}`
+        : `/news/${a.slug}`;
   const sameCat = all.filter((n) => n.id !== a.id && n.category === a.category);
   const related = [
     ...sameCat,

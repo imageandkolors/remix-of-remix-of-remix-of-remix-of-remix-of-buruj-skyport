@@ -89,7 +89,6 @@ export function HeroSlider({ slides = [] }: { slides?: SplashSlide[] }) {
   }, [i, items.length]);
   const go = (d: number) => setI((p) => (p + d + items.length) % items.length);
   const s = items[i] ?? items[0]!;
-  const embed = youtubeEmbed(s.youtube_url);
   return (
     <section
       className="relative h-[82vh] min-h-[560px] overflow-hidden bg-navy text-navy-foreground"
@@ -102,17 +101,18 @@ export function HeroSlider({ slides = [] }: { slides?: SplashSlide[] }) {
         >
           {sl.media_kind === "video" && sl.video_url ? (
             <video
-              src={sl.video_url}
-              autoPlay
+              src={idx === i ? sl.video_url : undefined}
+              autoPlay={idx === i}
+              preload={idx === i ? "auto" : "none"}
               muted
               loop
               playsInline
               className="h-full w-full object-cover"
               aria-label={sl.alt_text || sl.title || "Buruj Sports Academy"}
             />
-          ) : sl.media_kind === "youtube" && embed ? (
+          ) : sl.media_kind === "youtube" && idx === i && youtubeEmbed(sl.youtube_url) ? (
             <iframe
-              src={embed}
+              src={youtubeEmbed(sl.youtube_url) ?? undefined}
               title={sl.title || "Buruj Sports Academy video"}
               className="h-full w-full scale-[1.35] object-cover"
               allow="autoplay; encrypted-media; picture-in-picture"

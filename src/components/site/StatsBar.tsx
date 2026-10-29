@@ -20,7 +20,12 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
     io.observe(el);
     return () => io.disconnect();
   }, [to]);
-  return <span ref={ref}>{n}{suffix}</span>;
+  return (
+    <span ref={ref}>
+      {n}
+      {suffix}
+    </span>
+  );
 }
 
 export function StatsBar() {

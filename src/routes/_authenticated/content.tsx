@@ -160,6 +160,7 @@ function ContentAdminPage() {
             </aside>
             {selected && (
               <ArticleEditor
+                key={selected.id || selected.slug}
                 initial={selected}
                 categories={q.data?.categories ?? []}
                 onSaved={() => {

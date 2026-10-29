@@ -177,8 +177,13 @@ function Contact() {
               <select
                 id="programme"
                 name="programme"
+                required
+                defaultValue=""
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
+                <option value="" disabled>
+                  Select an option
+                </option>
                 <option>Football & Education</option>
                 <option>Football Development</option>
                 <option>Football Camping</option>

@@ -8,7 +8,8 @@ export const SITE = {
   instagram: "https://www.instagram.com/",
 };
 
-export const waLink = (text = "Hello Buruj Sports Academy, I'd like to enquire about your programmes.") =>
-  `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(text)}`;
+export const waLink = (
+  text = "Hello Buruj Sports Academy, I'd like to enquire about your programmes.",
+) => `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(text)}`;
 
 export const FEE_PLACEHOLDER = "Fee to be confirmed by admin";

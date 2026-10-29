@@ -1,13 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PROGRAMME_COLUMNS, normaliseSections, type Programme } from "./programmes";
+import type { Database } from "@/integrations/supabase/types";
 
-async function requireManager(context: { supabase: any; userId: string }) {
-  const { data, error } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+async function requireManager(context: { supabase: SupabaseClient<Database>; userId: string }) {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId);
   if (error) throw new Error("Could not verify staff access");
   const roles = (data ?? []).map((r: { role: string }) => r.role);
-  if (!roles.includes("admin") && !roles.includes("owner")) throw new Error("Admin access required");
+  if (!roles.includes("admin") && !roles.includes("owner"))
+    throw new Error("Admin access required");
 }
 
 const sectionSchema = z.object({
@@ -18,7 +24,12 @@ const sectionSchema = z.object({
 
 const programmeSchema = z.object({
   id: z.string().uuid().optional(),
-  slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
   name: z.string().trim().min(2).max(160),
   tagline: z.string().trim().max(300).nullable(),
   age_range: z.string().trim().max(80).nullable(),
@@ -43,9 +54,12 @@ export const listProgrammesAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Programme[]> => {
     await requireManager(context);
-    const { data, error } = await context.supabase.from("programmes").select(PROGRAMME_COLUMNS).order("display_order");
+    const { data, error } = await context.supabase
+      .from("programmes")
+      .select(PROGRAMME_COLUMNS)
+      .order("display_order");
     if (error) throw new Error("Could not load programmes");
-    return (data ?? []).map((p: any) => ({ ...p, sections: normaliseSections(p.sections) }));
+    return (data ?? []).map((p) => ({ ...p, sections: normaliseSections(p.sections) }));
   });
 
 export const saveProgramme = createServerFn({ method: "POST" })
@@ -59,7 +73,12 @@ export const saveProgramme = createServerFn({ method: "POST" })
       ? context.supabase.from("programmes").update(payload).eq("id", id)
       : context.supabase.from("programmes").insert(payload);
     const { error } = await q;
-    if (error) throw new Error(error.message.includes("duplicate") ? "That web address is already used" : "Could not save programme");
+    if (error)
+      throw new Error(
+        error.message.includes("duplicate")
+          ? "That web address is already used"
+          : "Could not save programme",
+      );
     return { ok: true };
   });
 

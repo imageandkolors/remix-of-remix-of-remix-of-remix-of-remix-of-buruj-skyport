@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { X, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import type { GalleryMedia } from "@/lib/content.functions";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 export type LightboxItem = Pick<
   GalleryMedia,
@@ -28,95 +29,85 @@ export function MediaLightbox({
 }: {
   item: LightboxItem | null;
   onClose: () => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
+  onPrevious?: (() => void) | undefined;
+  onNext?: (() => void) | undefined;
 }) {
   useEffect(() => {
     if (!item) return;
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
       if (event.key === "ArrowLeft") onPrevious?.();
       if (event.key === "ArrowRight") onNext?.();
     };
     document.addEventListener("keydown", key);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", key);
-      document.body.style.overflow = "";
-    };
-  }, [item, onClose, onPrevious, onNext]);
-  if (!item) return null;
-  const embed = item.kind === "youtube" ? youtubeEmbed(item.external_url || item.media_url) : null;
+    return () => document.removeEventListener("keydown", key);
+  }, [item, onPrevious, onNext]);
+  const embed = item?.kind === "youtube" ? youtubeEmbed(item.external_url || item.media_url) : null;
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={item.title}
-      onClick={onClose}
+    <Dialog
+      open={Boolean(item)}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <button
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
-        onClick={onClose}
-        aria-label="Close media viewer"
-      >
-        <X />
-      </button>
-      {onPrevious && (
-        <button
-          className="absolute left-3 top-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrevious();
-          }}
-          aria-label="Previous media"
-        >
-          <ChevronLeft />
-        </button>
-      )}
-      {onNext && (
-        <button
-          className="absolute right-3 top-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
-          onClick={(e) => {
-            e.stopPropagation();
-            onNext();
-          }}
-          aria-label="Next media"
-        >
-          <ChevronRight />
-        </button>
-      )}
-      <div className="max-h-[90vh] max-w-6xl" onClick={(e) => e.stopPropagation()}>
-        {item.kind === "image" && item.media_url && (
-          <img
-            src={item.media_url}
-            alt={item.title}
-            className="max-h-[78vh] max-w-full rounded-lg object-contain"
-          />
+      <DialogContent className="max-h-[95vh] max-w-6xl border-0 bg-black/95 p-4 text-white sm:rounded-xl">
+        <DialogTitle className="sr-only">{item?.title ?? "Media viewer"}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Use the previous and next controls to browse media. Escape closes this viewer.
+        </DialogDescription>
+        {item && (
+          <>
+            {onPrevious && (
+              <button
+                className="absolute left-3 top-1/2 z-10 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+                onClick={onPrevious}
+                aria-label="Previous media"
+              >
+                <ChevronLeft />
+              </button>
+            )}
+            {onNext && (
+              <button
+                className="absolute right-3 top-1/2 z-10 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+                onClick={onNext}
+                aria-label="Next media"
+              >
+                <ChevronRight />
+              </button>
+            )}
+            <div className="max-h-[85vh] max-w-full overflow-auto pr-8">
+              {item.kind === "image" && item.media_url && (
+                <img
+                  src={item.media_url}
+                  alt={item.title}
+                  className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain"
+                />
+              )}
+              {item.kind === "video" && item.media_url && (
+                <video
+                  src={item.media_url}
+                  controls
+                  autoPlay
+                  className="mx-auto max-h-[75vh] max-w-full rounded-lg"
+                />
+              )}
+              {item.kind === "youtube" && embed && (
+                <iframe
+                  src={embed}
+                  title={item.title}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  className="aspect-video w-[min(85vw,1000px)] rounded-lg"
+                />
+              )}
+              <div className="mt-4 text-center">
+                <h2 className="font-display text-xl font-bold uppercase">{item.title}</h2>
+                {item.caption && <p className="mt-1 text-sm text-white/70">{item.caption}</p>}
+              </div>
+            </div>
+          </>
         )}
-        {item.kind === "video" && item.media_url && (
-          <video
-            src={item.media_url}
-            controls
-            autoPlay
-            className="max-h-[78vh] max-w-full rounded-lg"
-          />
-        )}
-        {item.kind === "youtube" && embed && (
-          <iframe
-            src={embed}
-            title={item.title}
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-            className="aspect-video w-[min(90vw,1000px)] rounded-lg"
-          />
-        )}
-        <div className="mt-4 text-center text-white">
-          <h2 className="font-display text-xl font-bold uppercase">{item.title}</h2>
-          {item.caption && <p className="mt-1 text-sm text-white/70">{item.caption}</p>}
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
