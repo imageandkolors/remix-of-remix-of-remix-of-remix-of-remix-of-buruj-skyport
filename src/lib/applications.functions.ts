@@ -608,5 +608,12 @@ export const submitApplication = createServerFn({ method: "POST" })
       .select("id, reference_number")
       .single();
     if (error || !row) throw new Error("Could not submit application");
+    void import("./push.server").then(({ notifyAdmins }) =>
+      notifyAdmins({
+        title: "New academy application",
+        body: `${data.player_name} submitted an application for ${data.programme}.`,
+        url: "/dashboard",
+      }),
+    );
     return row;
   });

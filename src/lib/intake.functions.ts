@@ -45,6 +45,13 @@ export const submitEnquiry = createServerFn({ method: "POST" })
       status: "new",
     });
     if (error) throw new Error("Could not send enquiry");
+    void import("./push.server").then(({ notifyAdmins }) =>
+      notifyAdmins({
+        title: "New contact enquiry",
+        body: `${data.name} sent a new enquiry${data.programme ? ` about ${data.programme}` : ""}.`,
+        url: "/dashboard",
+      }),
+    );
     return { ok: true };
   });
 
@@ -70,6 +77,13 @@ export const submitTrialRegistration = createServerFn({ method: "POST" })
       status: "new",
     });
     if (error) throw new Error("Could not submit trial registration");
+    void import("./push.server").then(({ notifyAdmins }) =>
+      notifyAdmins({
+        title: "New trial registration",
+        body: `${data.player_name} has been registered for a trial.`,
+        url: "/dashboard",
+      }),
+    );
     return { ok: true };
   });
 

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getStaffDashboard } from "@/lib/staff.functions";
 import { listIntake, updateIntakeStatus } from "@/lib/intake.functions";
+import { NotificationManager } from "@/components/staff/NotificationManager";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -204,6 +205,7 @@ function DashboardPage() {
             </div>
           </aside>
         </section>
+        <NotificationManager />
         <IntakeInbox />
       </div>
     </div>

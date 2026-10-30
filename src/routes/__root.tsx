@@ -21,6 +21,7 @@ import { TrialSheetProvider } from "@/components/site/TrialForm";
 import { MobileTabBar } from "@/components/app/MobileTabBar";
 import { InstallPrompt } from "@/components/app/InstallPrompt";
 import { CookieConsent } from "@/components/app/CookieConsent";
+import { PushPrompt } from "@/components/app/PushPrompt";
 import { getPageSeo } from "@/lib/page-settings.functions";
 
 function NotFoundComponent() {
@@ -153,6 +154,7 @@ function RootComponent() {
       <Toaster richColors />
       <InstallPrompt />
       <CookieConsent />
+      <PushPrompt />
       <LaunchScreen />
     </QueryClientProvider>
   );
