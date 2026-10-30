@@ -10,7 +10,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -88,11 +88,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#0B1E3B" },
+      { name: "theme-color", content: "#FFFFFF" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Buruj BSA" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "WELCOME TO BURUJ SPORTS ACADEMY" },
       { title: "Buruj Sports Academy" },
       {
         name: "description",
@@ -153,7 +153,36 @@ function RootComponent() {
       <Toaster richColors />
       <InstallPrompt />
       <CookieConsent />
+      <LaunchScreen />
     </QueryClientProvider>
+  );
+}
+
+function LaunchScreen() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setVisible(false), 900);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white px-6 text-center text-navy"
+      role="status"
+      aria-label="Welcome to Buruj Sports Academy"
+    >
+      <img
+        src="/icon-512.png"
+        alt="Buruj Sports Academy crest"
+        className="h-40 w-40 object-contain sm:h-48 sm:w-48"
+      />
+      <h1 className="mt-8 max-w-sm font-display text-3xl font-extrabold uppercase leading-tight tracking-wide sm:text-4xl">
+        Welcome to Buruj Sports Academy
+      </h1>
+    </div>
   );
 }
 
