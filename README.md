@@ -65,9 +65,26 @@ The `cpanel-start.js` file is the cPanel startup shim. It imports the generated 
 2. Set the startup file to `cpanel-start.js` and the application URL to the desired domain or subdomain. Back up any existing site before assigning the live domain to this app.
 3. Add the required environment variables from `.env.example` in the application settings. Public routes need `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY`; set `VITE_SITE_URL` to the real HTTPS production origin before building so article canonicals/share links do not point to a preview host. Privileged admin/media operations also need `SUPABASE_SERVICE_ROLE_KEY`.
 4. Keep `SUPABASE_SERVICE_ROLE_KEY` and `LOVABLE_API_KEY` server-side. Never give them a `VITE_` prefix or commit a populated `.env` file. `VITE_*` values are embedded at build time, so rebuild after changing them. The `LOVABLE_CRON_SECRET*` variables are currently unused; this repository ships no in-app cron endpoint.
-5. Review [`drizzle/MIGRATIONS.md`](drizzle/MIGRATIONS.md), compare the target database with the numbered SQL files, and apply only outstanding migrations (including `0009`–`0018`) before exposing the app. Do not replay migrations blindly against an existing database. In particular, the upload-ticket code requires `0014`, shared rate limiting requires `0016`, caller-bound role checks require `0017`, and the private-schema role wrappers require `0018`; verify the `application-documents` bucket remains private and enforces the 20 MiB/MIME restrictions after migration.
+5. Review [`drizzle/MIGRATIONS.md`](drizzle/MIGRATIONS.md), compare the target database with the numbered SQL files, and apply only outstanding migrations (including `0009`–`0020`) before exposing the app. Do not replay migrations blindly against an existing database. In particular, the upload-ticket code requires `0014`, shared rate limiting requires `0016`, caller-bound role checks require `0017`, private-schema role wrappers require `0018`, public contact/trial rate limiting requires `0019`, and Web Push subscriptions require `0020`; verify the `application-documents` bucket remains private and enforces the 20 MiB/MIME restrictions after migration.
 6. Configure trusted-proxy IP rate limits at the production CDN/WAF for application submissions, parent-access requests, CV requests, and application uploads before exposing public endpoints. The database also enforces per-email/application limits, but those do not replace IP throttling. Then install dependencies, run `npm run build` from the application root, and restart the Node.js app in cPanel.
 
 GitHub is optional. You can transfer the source with FTP or upload a ZIP through File Manager; Git integration only automates fetching future code changes.
+
+## Deployment targets
+
+The repository keeps the Node.js server as the default build so the same source works on cPanel, Railway, Fly.io, Docker, and a regular VPS. The provider-specific files are committed at the repository root:
+
+- `Dockerfile` is the production image for Fly.io, Railway Docker deployments, and other container hosts.
+- `fly.toml` configures the Docker image, HTTPS, health checks, and a continuously running machine for Web Push delivery.
+- `railway.json` configures the standard `npm run build` and `npm start` flow for Railway.
+- `vercel.json` selects the Nitro Vercel build through `npm run build:vercel`.
+- `netlify.toml` selects the Nitro Netlify build through `npm run build:netlify`.
+- `cpanel-start.js` remains the cPanel startup file for the Node.js application manager.
+
+For **Vercel**, import this GitHub repository into Vercel and keep the root directory at the repository root. Vercel will build from `vercel.json`; every push to `main` will deploy when the repository is connected. For **Railway**, connect the GitHub repository and let Railway use `railway.json`. For **Fly.io**, install `flyctl`, set the secrets, then run `fly launch --no-deploy` followed by `fly deploy`. For **Netlify**, connect the repository and use the committed `netlify.toml`; the Nitro Netlify preset produces the server function and public assets. For cPanel, use the existing Node.js App setup described above.
+
+All providers need the Supabase variables in `.env.example`. Providers that run server functions also need `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY` for push delivery. Generate the VAPID pair once with `npx web-push generate-vapid-keys`; store the private key only in the provider's server-side secrets. `VAPID_PUBLIC_KEY` is returned to browsers by the server function and must not be placed in a `VITE_` variable. Rebuild after changing any `VITE_*` variable.
+
+Before the first deployment, apply the outstanding SQL files in `drizzle/migrations` in order, including `0020_push_notifications.sql`, and verify that the target provider is running Node.js 22.12 or newer. Users must grant notification permission once per browser/device; after that, the service worker can receive notifications while the PWA is closed.
 
 References: [Namecheap's Node.js app guide](https://www.namecheap.com/support/knowledgebase/article.aspx/10047/2182/how-to-work-with-nodejs-app/) and [TanStack Start's hosting guide](https://tanstack.com/start/latest/docs/framework/react/guide/hosting).

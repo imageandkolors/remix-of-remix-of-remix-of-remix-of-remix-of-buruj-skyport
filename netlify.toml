@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build:netlify"
+  publish = ".output/public"
+
+[build.environment]
+  NODE_VERSION = "22.12.0"
+  NITRO_PRESET = "netlify"
+
+[dev]
+  command = "npm run dev"
+  port = 3000

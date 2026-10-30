@@ -8,7 +8,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   nitro: {
-    preset: "node-server",
+    preset: process.env.NITRO_PRESET ?? "node-server",
   },
   vite: {
     server: { allowedHosts: [".us3.manus.computer"] },
