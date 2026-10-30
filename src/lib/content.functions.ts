@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { cleanHtml } from "./html-sanitizer";
+import { httpError } from "@/lib/http-error";
 
 export type SplashSlide = {
   id: string;
@@ -52,6 +53,10 @@ export type NewsItem = {
   article_section: string | null;
   schema_publisher: string | null;
 };
+export type NewsAdminSummary = Pick<
+  NewsItem,
+  "id" | "slug" | "title" | "category" | "published" | "published_at" | "is_featured"
+>;
 export type NewsMedia = {
   id: string;
   post_id: string;
@@ -268,54 +273,93 @@ async function requireAdmin(ctx: {
   userId: string;
 }) {
   const { data } = await ctx.supabase.rpc("is_admin", { _user_id: ctx.userId });
-  if (!data) throw new Error("Admin access required");
+  if (!data) throw httpError(403, "Admin access required");
 }
+
+export const getNewsAdminArticle = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<NewsItem | null> => {
+    await requireAdmin(context);
+    const { data: row, error } = await (context.supabase as any)
+      .from("news_posts")
+      .select(NEWS_COLS)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error("Could not load article");
+    if (!row) return null;
+    return (await hydrateNews([row]))[0] ?? null;
+  });
+
+export const listNewsAdminPage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ offset: z.number().int().min(0).max(100000) }).parse(d))
+  .handler(async ({ data, context }): Promise<{ news: NewsAdminSummary[]; hasMore: boolean }> => {
+    await requireAdmin(context);
+    const { data: rows, error } = await (context.supabase as any)
+      .from("news_posts")
+      .select("id,slug,title,category,published,published_at,is_featured")
+      .order("published_at", { ascending: false, nullsFirst: true })
+      .range(data.offset, data.offset + 100);
+    if (error) throw new Error("Could not load older articles");
+    const page = (rows ?? []) as NewsAdminSummary[];
+    return { news: page.slice(0, 100), hasMore: page.length > 100 };
+  });
 
 export const listContentAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const [s, n, c, f, t, g] = await Promise.all([
-      (context.supabase as any).from("splash_slides").select("*").order("sort"),
+      (context.supabase as any).from("splash_slides").select("*").order("sort").limit(100),
       (context.supabase as any)
         .from("news_posts")
-        .select(NEWS_COLS)
-        .order("published_at", { ascending: false, nullsFirst: true }),
+        .select("id,slug,title,category,published,published_at,is_featured")
+        .order("published_at", { ascending: false, nullsFirst: true })
+        .limit(101),
       (context.supabase as any)
         .from("content_categories")
         .select("id,name,slug,sort,is_active")
-        .order("sort"),
+        .order("sort")
+        .limit(200),
       (context.supabase as any)
         .from("social_feeds")
         .select("id,platform,label,source_url,is_active,display_limit,sort")
-        .order("sort"),
-      (context.supabase as any).from("content_tags").select("id,name,slug").order("name"),
+        .order("sort")
+        .limit(50),
+      (context.supabase as any)
+        .from("content_tags")
+        .select("id,name,slug")
+        .order("name")
+        .limit(300),
       (context.supabase as any)
         .from("gallery_media")
         .select("*")
         .order("sort")
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
+    if (s.error || n.error || c.error || f.error || t.error || g.error)
+      throw new Error("Could not load content manager data");
     const slides = s.data ?? [];
-    const news = await hydrateNews(n.data ?? []);
+    const newsRows = n.data ?? [];
     const urls = await signPaths(slides.flatMap((x: any) => [x.image_path, x.video_path]));
+    const { data: feedItems, error: feedItemError } = await (context.supabase as any)
+      .from("social_feed_items")
+      .select("id,feed_id,title,video_url,thumbnail_url,sort,is_active")
+      .order("sort")
+      .limit(500);
+    if (feedItemError) throw new Error("Could not load social feed items");
     return {
       slides: slides.map((x: any) => ({
         ...x,
         image_url: x.image_path ? (urls.get(x.image_path) ?? null) : null,
         video_url: x.video_path ? (urls.get(x.video_path) ?? null) : null,
       })),
-      news,
+      news: (newsRows as NewsAdminSummary[]).slice(0, 100),
+      news_has_more: newsRows.length > 100,
       categories: c.data ?? [],
-      feeds: hydrateSocialFeedRows(
-        f.data ?? [],
-        (
-          await (context.supabase as any)
-            .from("social_feed_items")
-            .select("id,feed_id,title,video_url,thumbnail_url,sort,is_active")
-            .order("sort")
-        ).data ?? [],
-      ),
+      feeds: hydrateSocialFeedRows(f.data ?? [], feedItems ?? []),
       tags: t.data ?? [],
       gallery: await hydrateGallery(g.data ?? []),
     };
@@ -465,15 +509,41 @@ export const saveNews = createServerFn({ method: "POST" })
         cover_position: z.string().trim().max(40).default("center"),
         media: z
           .array(
-            z.object({
-              sort: z.number().int().min(0).max(99),
-              kind: z.enum(["image", "video", "youtube"]),
-              storage_path: pathSchema,
-              external_url: opt(500),
-              alt_text: opt(180),
-              caption: opt(300),
-              mime_type: opt(120),
-            }),
+            z.discriminatedUnion("kind", [
+              z.object({
+                sort: z.number().int().min(0).max(99),
+                kind: z.literal("image"),
+                storage_path: z
+                  .string()
+                  .max(300)
+                  .regex(/^(splash|news|social|about)\/[A-Za-z0-9._\-/]+$/),
+                external_url: z.null().optional(),
+                alt_text: opt(180),
+                caption: opt(300),
+                mime_type: opt(120),
+              }),
+              z.object({
+                sort: z.number().int().min(0).max(99),
+                kind: z.literal("video"),
+                storage_path: z
+                  .string()
+                  .max(300)
+                  .regex(/^(splash|news|social|about)\/[A-Za-z0-9._\-/]+$/),
+                external_url: z.null().optional(),
+                alt_text: opt(180),
+                caption: opt(300),
+                mime_type: opt(120),
+              }),
+              z.object({
+                sort: z.number().int().min(0).max(99),
+                kind: z.literal("youtube"),
+                storage_path: z.null().optional(),
+                external_url: z.string().trim().url().max(500),
+                alt_text: opt(180),
+                caption: opt(300),
+                mime_type: opt(120),
+              }),
+            ]),
           )
           .max(30)
           .default([]),
@@ -523,18 +593,11 @@ export const saveNews = createServerFn({ method: "POST" })
       postId = created?.id;
     }
     if (postId) {
-      const mediaRows = media
-        .filter((item) =>
-          item.kind === "youtube" ? Boolean(item.external_url) : Boolean(item.storage_path),
-        )
-        .map((item) => ({ ...item, post_id: postId }));
-      await (context.supabase as any).from("news_post_media").delete().eq("post_id", postId);
-      if (mediaRows.length) {
-        const mediaResult = await (context.supabase as any)
-          .from("news_post_media")
-          .insert(mediaRows);
-        if (mediaResult.error) throw new Error("Could not save article gallery");
-      }
+      const { error: mediaError } = await (context.supabase as any).rpc("replace_news_post_media", {
+        p_post_id: postId,
+        p_media: media,
+      });
+      if (mediaError) throw new Error("Could not save article gallery");
     }
     const normalizedTags = [...new Set((rest.tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
     if (normalizedTags.length) {

@@ -70,17 +70,31 @@ export const getPlayers = createServerFn({ method: "GET" }).handler(async () => 
       "slug, full_name, jersey_number, position, secondary_position, preferred_foot, date_of_birth, programme, avatar_url",
     )
     .eq("is_published", true)
-    .order("jersey_number", { ascending: true });
+    .order("jersey_number", { ascending: true })
+    .limit(200);
   if (error) throw new Error(error.message);
-  return Promise.all(
-    (data ?? []).map(async (player) => {
-      if (!player.avatar_url || /^https?:\/\//.test(player.avatar_url)) return safeDob(player);
-      const { data: signed } = await client.storage
-        .from("player-profile-media")
-        .createSignedUrl(player.avatar_url, 3600);
-      return safeDob({ ...player, avatar_url: signed?.signedUrl ?? null });
-    }),
-  );
+  const players = data ?? [];
+  const paths = [
+    ...new Set(
+      players
+        .map((player) => player.avatar_url)
+        .filter((path): path is string => Boolean(path) && !/^https?:\/\//.test(path!)),
+    ),
+  ];
+  const signedByPath = new Map<string, string>();
+  if (paths.length) {
+    const { data: signed, error: signingError } = await client.storage
+      .from("player-profile-media")
+      .createSignedUrls(paths, 3600);
+    if (signingError) console.error("[players] avatar signing failed", signingError);
+    for (const item of signed ?? []) {
+      if (item.path && item.signedUrl) signedByPath.set(item.path, item.signedUrl);
+    }
+  }
+  return players.map((player) => {
+    if (!player.avatar_url || /^https?:\/\//.test(player.avatar_url)) return safeDob(player);
+    return safeDob({ ...player, avatar_url: signedByPath.get(player.avatar_url) ?? null });
+  });
 });
 
 export const getPlayer = createServerFn({ method: "GET" })

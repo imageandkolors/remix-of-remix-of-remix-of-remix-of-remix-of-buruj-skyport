@@ -12,6 +12,8 @@ import { MediaLibrary } from "@/components/staff/MediaLibrary";
 import { AboutManager } from "@/components/staff/AboutManager";
 import { listAboutAdmin } from "@/lib/about.functions";
 import {
+  getNewsAdminArticle,
+  listNewsAdminPage,
   listContentAdmin,
   requestCmsUpload,
   saveNews,
@@ -72,16 +74,33 @@ function ContentAdminPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["content-admin"], queryFn: () => listContentAdmin() });
   const aboutQ = useQuery({ queryKey: ["about-admin"], queryFn: () => listAboutAdmin() });
-  const [selected, setSelected] = useState<Draft | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [newDraft, setNewDraft] = useState<Draft | null>(null);
+  const [olderPosts, setOlderPosts] = useState<ContentData["news"]>([]);
+  const [newsOffset, setNewsOffset] = useState(100);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const articleQ = useQuery({
+    queryKey: ["content-admin-article", selectedPostId],
+    queryFn: () => getNewsAdminArticle({ data: { id: selectedPostId! } }),
+    enabled: Boolean(selectedPostId),
+  });
   const [tab, setTab] = useState<"articles" | "slides" | "feeds" | "media" | "about">("articles");
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["content-admin"] });
     void qc.invalidateQueries({ queryKey: ["about-admin"] });
   };
   useEffect(() => {
-    if (!selected && q.data?.news[0]) setSelected(toDraft(q.data.news[0]));
-  }, [q.data, selected]);
-  const posts = q.data?.news ?? [];
+    if (!selectedPostId && !newDraft && q.data?.news[0]) setSelectedPostId(q.data.news[0].id);
+  }, [q.data, selectedPostId, newDraft]);
+  useEffect(() => {
+    if (!q.data) return;
+    setOlderPosts([]);
+    setNewsOffset(100);
+    setHasMorePosts(q.data.news_has_more);
+  }, [q.data]);
+  const selected = newDraft ?? (articleQ.data ? toDraft(articleQ.data) : null);
+  const posts = [...(q.data?.news ?? []), ...olderPosts];
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -98,7 +117,8 @@ function ContentAdminPage() {
         <Button
           onClick={() => {
             setTab("articles");
-            setSelected({ ...EMPTY, slug: `new-article-${Date.now().toString(36)}` });
+            setSelectedPostId(null);
+            setNewDraft({ ...EMPTY, slug: `new-article-${Date.now().toString(36)}` });
           }}
         >
           <Plus />
@@ -136,8 +156,11 @@ function ContentAdminPage() {
               {posts.map((post) => (
                 <button
                   key={post.id}
-                  onClick={() => setSelected(toDraft(post))}
-                  className={`w-full rounded-xl border p-3 text-left ${selected?.id === post.id ? "border-navy bg-navy text-white" : "bg-card hover:border-primary"}`}
+                  onClick={() => {
+                    setNewDraft(null);
+                    setSelectedPostId(post.id);
+                  }}
+                  className={`w-full rounded-xl border p-3 text-left ${selectedPostId === post.id ? "border-navy bg-navy text-white" : "bg-card hover:border-primary"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="line-clamp-2 text-sm font-semibold">{post.title}</span>
@@ -157,18 +180,51 @@ function ContentAdminPage() {
                   No saved articles yet. Create your first one.
                 </div>
               )}
+              {hasMorePosts && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={loadingMore}
+                  onClick={async () => {
+                    setLoadingMore(true);
+                    try {
+                      const page = await listNewsAdminPage({ data: { offset: newsOffset } });
+                      setOlderPosts((previous) => [...previous, ...page.news]);
+                      setNewsOffset((offset) => offset + page.news.length);
+                      setHasMorePosts(page.hasMore);
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : "Could not load articles",
+                      );
+                    } finally {
+                      setLoadingMore(false);
+                    }
+                  }}
+                >
+                  {loadingMore ? "Loading articles…" : "Load older articles"}
+                </Button>
+              )}
             </aside>
+            {selectedPostId && !selected && articleQ.isLoading && (
+              <p className="py-12 text-muted-foreground">Loading article…</p>
+            )}
+            {selectedPostId && articleQ.error && (
+              <p className="py-12 text-destructive">{(articleQ.error as Error).message}</p>
+            )}
             {selected && (
               <ArticleEditor
                 key={selected.id || selected.slug}
                 initial={selected}
                 categories={q.data?.categories ?? []}
                 onSaved={() => {
-                  setSelected(null);
+                  setNewDraft(null);
+                  setSelectedPostId(null);
                   refresh();
                 }}
                 onDeleted={() => {
-                  setSelected(null);
+                  setNewDraft(null);
+                  setSelectedPostId(null);
                   refresh();
                 }}
               />

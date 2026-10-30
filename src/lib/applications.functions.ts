@@ -4,6 +4,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { httpError } from "@/lib/http-error";
 
 export const DOCUMENT_TYPES = {
   birth_certificate: "Birth certificate",
@@ -22,6 +23,35 @@ export function requiredDocs(programme: string): DocType[] {
 }
 
 const ALLOWED = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic"];
+
+function sniffDocumentMime(bytes: Uint8Array): string | null {
+  if (new TextDecoder().decode(bytes.subarray(0, 1024)).includes("%PDF-")) return "application/pdf";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.subarray(0, 8).join(",") === "137,80,78,71,13,10,26,10") return "image/png";
+  if (
+    bytes.length >= 12 &&
+    new TextDecoder().decode(bytes.subarray(0, 4)) === "RIFF" &&
+    new TextDecoder().decode(bytes.subarray(8, 12)) === "WEBP"
+  )
+    return "image/webp";
+  if (bytes.length >= 16 && new TextDecoder().decode(bytes.subarray(4, 8)) === "ftyp") {
+    const majorBrand = new TextDecoder().decode(bytes.subarray(8, 12));
+    const declaredBoxSize = new DataView(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength,
+    ).getUint32(0, false);
+    const boxEnd = declaredBoxSize >= 16 ? Math.min(declaredBoxSize, bytes.length) : bytes.length;
+    const compatibleBrands = new Set<string>();
+    for (let offset = 16; offset + 4 <= boxEnd; offset += 4) {
+      compatibleBrands.add(new TextDecoder().decode(bytes.subarray(offset, offset + 4)));
+    }
+    const heicBrands = ["heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs"];
+    if (heicBrands.includes(majorBrand) || heicBrands.some((brand) => compatibleBrands.has(brand)))
+      return "image/heic";
+  }
+  return null;
+}
 
 async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
@@ -46,6 +76,7 @@ export const requestApplicationUpload = createServerFn({ method: "POST" })
       .object({
         applicationId: z.string().uuid(),
         reference: z.string().min(8).max(40),
+        documentType: docType,
         filename: z.string().trim().min(1).max(180),
         mimeType: z.string().max(120),
         size: z.number().int().positive().max(20971520),
@@ -55,6 +86,13 @@ export const requestApplicationUpload = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!ALLOWED.includes(data.mimeType)) throw new Error("Upload a PDF or photo (JPG, PNG, WEBP)");
     const db = await findApplication(data.applicationId, data.reference);
+    const { enforcePublicIntakeRateLimit } = await import("./public-intake-rate-limit.server");
+    await enforcePublicIntakeRateLimit(
+      "application_upload",
+      `application:${data.applicationId}`,
+      20,
+      3600,
+    );
     const safe = data.filename
       .toLowerCase()
       .replace(/[^a-z0-9._-]+/g, "-")
@@ -64,6 +102,30 @@ export const requestApplicationUpload = createServerFn({ method: "POST" })
       .from("application-documents")
       .createSignedUploadUrl(path);
     if (error || !signed) throw new Error("Could not prepare upload");
+    const { error: ticketError } = await db.from("application_upload_tickets").insert({
+      application_id: data.applicationId,
+      document_type: data.documentType,
+      storage_path: path,
+      original_filename: data.filename,
+      expected_mime_type: data.mimeType,
+      expected_size: data.size,
+    });
+    if (ticketError) throw new Error("Could not prepare upload");
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: expired } = await db
+      .from("application_upload_tickets")
+      .select("id")
+      .lt("expires_at", cutoff)
+      .limit(100);
+    if (expired?.length) {
+      await db
+        .from("application_upload_tickets")
+        .delete()
+        .in(
+          "id",
+          expired.map((ticket) => ticket.id),
+        );
+    }
     return { path, token: signed.token };
   });
 
@@ -84,15 +146,76 @@ export const completeApplicationUpload = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!data.path.startsWith(`${data.applicationId}/`)) throw new Error("Invalid upload");
     const db = await findApplication(data.applicationId, data.reference);
-    const { error } = await db.from("application_documents").insert({
-      application_id: data.applicationId,
-      document_type: data.documentType,
-      storage_path: data.path,
-      original_filename: data.filename,
-      mime_type: data.mimeType,
-      size_bytes: data.size,
-    });
+    const { data: ticket, error: ticketError } = await db
+      .from("application_upload_tickets")
+      .select("*")
+      .eq("application_id", data.applicationId)
+      .eq("storage_path", data.path)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (ticketError || !ticket) throw new Error("Upload expired or was not requested");
+    if (
+      ticket.document_type !== data.documentType ||
+      ticket.original_filename !== data.filename ||
+      ticket.expected_mime_type !== data.mimeType ||
+      Number(ticket.expected_size) !== data.size
+    )
+      throw new Error("Uploaded file does not match its request");
+
+    const storage = db.storage.from("application-documents");
+    const { data: objectInfo, error: infoError } = await storage.info(data.path);
+    if (infoError || !objectInfo) throw new Error("Uploaded file could not be verified");
+    const actualSize = Number(objectInfo.size ?? objectInfo.metadata?.size);
+    const actualMime = objectInfo.contentType ?? objectInfo.metadata?.mimetype;
+    if (
+      !Number.isSafeInteger(actualSize) ||
+      actualSize !== Number(ticket.expected_size) ||
+      actualSize > 20971520 ||
+      actualMime !== ticket.expected_mime_type
+    )
+      throw new Error("Uploaded file does not match the requested size or type");
+
+    const { data: signed, error: signedError } = await storage.createSignedUrl(data.path, 60);
+    if (signedError || !signed) throw new Error("Uploaded file could not be verified");
+    const response = await fetch(signed.signedUrl, { headers: { Range: "bytes=0-4095" } });
+    if (!response.ok || !response.body) throw new Error("Uploaded file could not be verified");
+    const reader = response.body.getReader();
+    const { value: prefix } = await reader.read();
+    await reader.cancel();
+    if (!prefix || sniffDocumentMime(prefix) !== ticket.expected_mime_type)
+      throw new Error("Uploaded file contents do not match the declared type");
+
+    const { error } = await db.from("application_documents").upsert(
+      {
+        application_id: data.applicationId,
+        document_type: ticket.document_type,
+        storage_path: data.path,
+        original_filename: ticket.original_filename,
+        mime_type: ticket.expected_mime_type,
+        size_bytes: Number(ticket.expected_size),
+      },
+      { onConflict: "storage_path" },
+    );
     if (error) throw new Error("Could not save document");
+    const { data: completed, error: completeError } = await db
+      .from("application_upload_tickets")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", ticket.id)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (completeError)
+      throw new Error("Document saved, but upload confirmation could not be finalized");
+    if (!completed) {
+      const { data: current } = await db
+        .from("application_upload_tickets")
+        .select("status")
+        .eq("id", ticket.id)
+        .maybeSingle();
+      if (current?.status !== "completed")
+        throw new Error("Document saved, but upload confirmation could not be finalized");
+    }
     return { ok: true };
   });
 
@@ -109,23 +232,26 @@ export const requestParentAccess = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const db = await admin();
-    const { count } = await db
-      .from("parent_access_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("email", data.email)
-      .eq("status", "pending");
-    if ((count ?? 0) < 3)
-      await db.from("parent_access_requests").insert({
-        email: data.email,
-        reference_number: data.reference,
-        guardian_name: data.name ?? null,
-      });
+    const { enforcePublicIntakeRateLimit } = await import("./public-intake-rate-limit.server");
+    await enforcePublicIntakeRateLimit("parent_access", `email:${data.email}`, 3, 600);
+    const limitedRequestDb = db as unknown as {
+      rpc: (
+        functionName: string,
+        args: Record<string, string | null>,
+      ) => Promise<{ error: unknown }>;
+    };
+    const { error } = await limitedRequestDb.rpc("create_parent_access_request_limited", {
+      p_email: data.email,
+      p_reference_number: data.reference,
+      p_guardian_name: data.name ?? null,
+    });
+    if (error) throw new Error("Could not process request");
     return { ok: true };
   });
 
 async function requireAdmin(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data } = await context.supabase.rpc("is_admin", { _user_id: context.userId });
-  if (!data) throw new Error("Admin access required");
+  if (!data) throw httpError(403, "Admin access required");
 }
 
 export const listAccessRequests = createServerFn({ method: "GET" })
@@ -169,10 +295,13 @@ export const decideAccessRequest = createServerFn({ method: "POST" })
       .single();
     if (!req) throw new Error("Request not found");
     if (data.action === "decline") {
-      await context.supabase
+      const { data: updated, error } = await context.supabase
         .from("parent_access_requests")
         .update({ status: "declined" })
-        .eq("id", data.id);
+        .eq("id", data.id)
+        .select("id")
+        .maybeSingle();
+      if (error || !updated) throw new Error("Could not decline access request");
       return { ok: true };
     }
     const db = await admin();
@@ -189,10 +318,16 @@ export const decideAccessRequest = createServerFn({ method: "POST" })
       options: { shouldCreateUser: true, emailRedirectTo: `${origin}/portal` },
     });
     if (error) throw new Error("Could not send the sign-in link. Try again in a minute.");
-    await context.supabase
+    const { data: updated, error: updateError } = await context.supabase
       .from("parent_access_requests")
       .update({ status: "sent", sent_at: new Date().toISOString() })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id")
+      .maybeSingle();
+    if (updateError || !updated)
+      throw new Error(
+        "The sign-in link was sent, but the request status could not be saved. Verify the request before retrying.",
+      );
     return { ok: true };
   });
 
@@ -291,7 +426,8 @@ export const getApplicationDocuments = createServerFn({ method: "POST" })
     const { data: isStaff, error: roleError } = await context.supabase.rpc("is_staff", {
       _user_id: context.userId,
     });
-    if (roleError || !isStaff) throw new Error("Staff access required");
+    if (roleError) throw new Error("Could not verify staff access");
+    if (!isStaff) throw httpError(403, "Staff access required");
     const { data: docs, error } = await context.supabase
       .from("application_documents")
       .select("*")
@@ -323,7 +459,7 @@ export const analyzeApplication = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ applicationId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<Assessment & { assessed_at: string }> => {
     const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Staff access required");
+    if (!isStaff) throw httpError(403, "Staff access required");
     const { data: app } = await context.supabase
       .from("applications")
       .select("*")
@@ -453,6 +589,11 @@ export const submitApplication = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { enforcePublicIntakeRateLimit } = await import("./public-intake-rate-limit.server");
+    const identifier = data.guardian_email
+      ? `email:${data.guardian_email}`
+      : `phone:${data.guardian_phone.replace(/\D/g, "")}`;
+    await enforcePublicIntakeRateLimit("application", identifier, 5, 3600);
     const db = await admin();
     const { data: prog } = await db
       .from("programmes")

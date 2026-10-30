@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { cleanHtml } from "./html-sanitizer";
+import { httpError } from "@/lib/http-error";
 
 export type AboutSection = {
   id: string;
@@ -89,7 +90,7 @@ export const getAboutSections = createServerFn({ method: "GET" }).handler(
 
 async function requireAdmin(context: any) {
   const { data } = await context.supabase.rpc("is_admin", { _user_id: context.userId });
-  if (!data) throw new Error("Admin access required");
+  if (!data) throw httpError(403, "Admin access required");
 }
 
 export const listAboutAdmin = createServerFn({ method: "GET" })

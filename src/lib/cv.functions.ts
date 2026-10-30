@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { httpError } from "@/lib/http-error";
 
 export const requestPlayerCv = createServerFn({ method: "POST" })
   .inputValidator((d) =>
@@ -24,6 +25,8 @@ export const requestPlayerCv = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { enforcePublicIntakeRateLimit } = await import("./public-intake-rate-limit.server");
+    await enforcePublicIntakeRateLimit("cv", `email:${data.email}`, 3, 600);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: p } = await supabaseAdmin
       .from("player_profiles")
@@ -50,13 +53,14 @@ export const listCvRequests = createServerFn({ method: "GET" })
     const { data: isStaff, error: roleError } = await context.supabase.rpc("is_staff", {
       _user_id: context.userId,
     });
-    if (roleError || !isStaff) throw new Error("Staff access required");
+    if (roleError) throw new Error("Could not verify staff access");
+    if (!isStaff) throw httpError(403, "Staff access required");
     const { data, error } = await context.supabase
       .from("player_cv_requests")
       .select("*, player_profiles(full_name, slug)")
       .order("created_at", { ascending: false })
       .limit(100);
-    if (error) throw new Error("Staff access required");
+    if (error) throw new Error("Could not load CV requests");
     return data ?? [];
   });
 
@@ -69,7 +73,8 @@ export const setCvRequestStatus = createServerFn({ method: "POST" })
     const { data: ok, error: roleError } = await context.supabase.rpc("is_staff", {
       _user_id: context.userId,
     });
-    if (roleError || !ok) throw new Error("Staff access required");
+    if (roleError) throw new Error("Could not verify staff access");
+    if (!ok) throw httpError(403, "Staff access required");
     const { data: updated, error } = await context.supabase
       .from("player_cv_requests")
       .update({ status: data.status })

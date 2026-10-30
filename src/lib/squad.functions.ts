@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, TablesUpdate } from "@/integrations/supabase/types";
+import { httpError } from "@/lib/http-error";
 
 async function requireStaff(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data, error } = await context.supabase
@@ -12,7 +13,7 @@ async function requireStaff(context: { supabase: SupabaseClient<Database>; userI
   if (error) throw new Error("Could not verify staff access");
   const roles = (data ?? []).map((r: { role: string }) => r.role);
   if (!roles.some((r: string) => ["coach", "admin", "owner"].includes(r)))
-    throw new Error("Staff access required");
+    throw httpError(403, "Staff access required");
 }
 
 const rating = z.number().int().min(0).max(99).nullable();

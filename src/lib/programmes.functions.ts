@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PROGRAMME_COLUMNS, normaliseSections, type Programme } from "./programmes";
 import type { Database } from "@/integrations/supabase/types";
+import { httpError } from "@/lib/http-error";
 
 async function requireManager(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data, error } = await context.supabase
@@ -13,7 +14,7 @@ async function requireManager(context: { supabase: SupabaseClient<Database>; use
   if (error) throw new Error("Could not verify staff access");
   const roles = (data ?? []).map((r: { role: string }) => r.role);
   if (!roles.includes("admin") && !roles.includes("owner"))
-    throw new Error("Admin access required");
+    throw httpError(403, "Admin access required");
 }
 
 const sectionSchema = z.object({

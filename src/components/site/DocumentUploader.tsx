@@ -29,7 +29,14 @@ export function DocumentUploader({
     try {
       const mimeType = file.type || "application/octet-stream";
       const { path, token } = await requestApplicationUpload({
-        data: { applicationId, reference, filename: file.name, mimeType, size: file.size },
+        data: {
+          applicationId,
+          reference,
+          documentType: type,
+          filename: file.name,
+          mimeType,
+          size: file.size,
+        },
       });
       const { error } = await supabase.storage
         .from("application-documents")

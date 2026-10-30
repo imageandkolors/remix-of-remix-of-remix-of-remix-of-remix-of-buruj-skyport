@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { httpError } from "@/lib/http-error";
 
 export type ContactLocation = {
   id: string;
@@ -51,7 +52,7 @@ function client() {
 }
 async function admin(context: any) {
   const { data } = await context.supabase.rpc("is_admin", { _user_id: context.userId });
-  if (!data) throw new Error("Admin access required");
+  if (!data) throw httpError(403, "Admin access required");
 }
 async function sign(path: string | null) {
   if (!path) return null;

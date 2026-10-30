@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { httpError } from "@/lib/http-error";
 
 export type SiteSettings = {
   whatsapp: string;
@@ -96,7 +97,7 @@ export const saveSiteSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("is_admin", { _user_id: context.userId });
-    if (!isAdmin) throw new Error("Admin access required");
+    if (!isAdmin) throw httpError(403, "Admin access required");
     const { error } = await context.supabase
       .from("site_settings")
       .update({ ...data, updated_at: new Date().toISOString() })

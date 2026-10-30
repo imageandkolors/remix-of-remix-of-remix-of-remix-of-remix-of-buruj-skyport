@@ -2,11 +2,15 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { httpError } from "@/lib/http-error";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Unauthorized:")) {
+      throw httpError(401, error.message);
+    }
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }

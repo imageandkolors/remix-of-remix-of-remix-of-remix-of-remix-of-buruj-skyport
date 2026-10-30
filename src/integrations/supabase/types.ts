@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      about_sections: {
+        Row: {
+          accent_color: string
+          bg_color: string
+          body_html: string
+          created_at: string
+          eyebrow: string | null
+          id: string
+          image_alt: string | null
+          image_path: string | null
+          is_active: boolean
+          layout: string
+          section_key: string
+          sort: number
+          text_color: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          bg_color?: string
+          body_html?: string
+          created_at?: string
+          eyebrow?: string | null
+          id?: string
+          image_alt?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          layout?: string
+          section_key: string
+          sort?: number
+          text_color?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          bg_color?: string
+          body_html?: string
+          created_at?: string
+          eyebrow?: string | null
+          id?: string
+          image_alt?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          layout?: string
+          section_key?: string
+          sort?: number
+          text_color?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       application_documents: {
         Row: {
           application_id: string
@@ -48,6 +102,70 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_upload_tickets: {
+        Row: {
+          application_id: string
+          completed_at: string | null
+          created_at: string
+          document_type: string
+          expected_mime_type: string
+          expected_size: number
+          expires_at: string
+          id: string
+          original_filename: string
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          application_id: string
+          completed_at?: string | null
+          created_at?: string
+          document_type: string
+          expected_mime_type: string
+          expected_size: number
+          expires_at?: string
+          id?: string
+          original_filename: string
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          application_id?: string
+          completed_at?: string | null
+          created_at?: string
+          document_type?: string
+          expected_mime_type?: string
+          expected_size?: number
+          expires_at?: string
+          id?: string
+          original_filename?: string
+          status?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_upload_tickets_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_upload_tickets_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "applications"
@@ -150,6 +268,99 @@ export type Database = {
           },
         ]
       }
+      contact_locations: {
+        Row: {
+          address: string
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          map_url: string | null
+          name: string
+          phone: string | null
+          sort: number
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          map_url?: string | null
+          name: string
+          phone?: string | null
+          sort?: number
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          map_url?: string | null
+          name?: string
+          phone?: string | null
+          sort?: number
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      content_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      content_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       enquiries: {
         Row: {
           created_at: string
@@ -183,48 +394,224 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_media: {
+        Row: {
+          caption: string | null
+          category: string
+          created_at: string
+          external_url: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          mime_type: string | null
+          sort: number
+          storage_path: string | null
+          title: string
+        }
+        Insert: {
+          caption?: string | null
+          category?: string
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          mime_type?: string | null
+          sort?: number
+          storage_path?: string | null
+          title: string
+        }
+        Update: {
+          caption?: string | null
+          category?: string
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          mime_type?: string | null
+          sort?: number
+          storage_path?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      news_post_media: {
+        Row: {
+          alt_text: string | null
+          caption: string | null
+          created_at: string
+          external_url: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          post_id: string
+          sort: number
+          storage_path: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          post_id: string
+          sort?: number
+          storage_path?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          post_id?: string
+          sort?: number
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "news_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_posts: {
         Row: {
+          article_section: string | null
           author: string | null
           body: string | null
+          body_html: string | null
+          canonical_url: string | null
           category: string
+          cover_fit: string
           cover_path: string | null
+          cover_position: string
           created_at: string
           excerpt: string | null
           id: string
           is_featured: boolean
+          meta_description: string | null
+          meta_title: string | null
           published: boolean
           published_at: string | null
+          schema_publisher: string | null
+          seo_author: string | null
+          seo_keywords: string | null
           slug: string | null
+          social_image_path: string | null
+          tags: string[]
           title: string
         }
         Insert: {
+          article_section?: string | null
           author?: string | null
           body?: string | null
+          body_html?: string | null
+          canonical_url?: string | null
           category?: string
+          cover_fit?: string
           cover_path?: string | null
+          cover_position?: string
           created_at?: string
           excerpt?: string | null
           id?: string
           is_featured?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
           published?: boolean
           published_at?: string | null
+          schema_publisher?: string | null
+          seo_author?: string | null
+          seo_keywords?: string | null
           slug?: string | null
+          social_image_path?: string | null
+          tags?: string[]
           title: string
         }
         Update: {
+          article_section?: string | null
           author?: string | null
           body?: string | null
+          body_html?: string | null
+          canonical_url?: string | null
           category?: string
+          cover_fit?: string
           cover_path?: string | null
+          cover_position?: string
           created_at?: string
           excerpt?: string | null
           id?: string
           is_featured?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
           published?: boolean
           published_at?: string | null
+          schema_publisher?: string | null
+          seo_author?: string | null
+          seo_keywords?: string | null
           slug?: string | null
+          social_image_path?: string | null
+          tags?: string[]
           title?: string
+        }
+        Relationships: []
+      }
+      page_seo: {
+        Row: {
+          canonical_url: string | null
+          description: string
+          id: string
+          keywords: string | null
+          og_description: string | null
+          og_image_path: string | null
+          og_title: string | null
+          og_type: string
+          page_key: string
+          page_path: string
+          robots: string
+          title: string
+          twitter_card: string
+          updated_at: string
+        }
+        Insert: {
+          canonical_url?: string | null
+          description?: string
+          id?: string
+          keywords?: string | null
+          og_description?: string | null
+          og_image_path?: string | null
+          og_title?: string | null
+          og_type?: string
+          page_key: string
+          page_path: string
+          robots?: string
+          title: string
+          twitter_card?: string
+          updated_at?: string
+        }
+        Update: {
+          canonical_url?: string | null
+          description?: string
+          id?: string
+          keywords?: string | null
+          og_description?: string | null
+          og_image_path?: string | null
+          og_title?: string | null
+          og_type?: string
+          page_key?: string
+          page_path?: string
+          robots?: string
+          title?: string
+          twitter_card?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -764,8 +1151,37 @@ export type Database = {
         }
         Relationships: []
       }
+      public_intake_rate_limits: {
+        Row: {
+          created_at: string
+          identifier_hash: string
+          operation: string
+          request_count: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          identifier_hash: string
+          operation: string
+          request_count: number
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          identifier_hash?: string
+          operation?: string
+          request_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
+          contact_heading: string
+          contact_intro: string
           email: string
           facebook: string | null
           footer_bg: string
@@ -782,6 +1198,8 @@ export type Database = {
           youtube: string | null
         }
         Insert: {
+          contact_heading?: string
+          contact_intro?: string
           email?: string
           facebook?: string | null
           footer_bg?: string
@@ -798,6 +1216,8 @@ export type Database = {
           youtube?: string | null
         }
         Update: {
+          contact_heading?: string
+          contact_intro?: string
           email?: string
           facebook?: string | null
           footer_bg?: string
@@ -815,39 +1235,128 @@ export type Database = {
         }
         Relationships: []
       }
+      social_feed_items: {
+        Row: {
+          created_at: string
+          feed_id: string
+          id: string
+          is_active: boolean
+          sort: number
+          thumbnail_url: string | null
+          title: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          feed_id: string
+          id?: string
+          is_active?: boolean
+          sort?: number
+          thumbnail_url?: string | null
+          title?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          feed_id?: string
+          id?: string
+          is_active?: boolean
+          sort?: number
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_feed_items_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "social_feeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_feeds: {
+        Row: {
+          created_at: string
+          display_limit: number
+          id: string
+          is_active: boolean
+          label: string
+          platform: string
+          sort: number
+          source_url: string
+        }
+        Insert: {
+          created_at?: string
+          display_limit?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          platform: string
+          sort?: number
+          source_url: string
+        }
+        Update: {
+          created_at?: string
+          display_limit?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          platform?: string
+          sort?: number
+          source_url?: string
+        }
+        Relationships: []
+      }
       splash_slides: {
         Row: {
+          alt_text: string | null
           bg_color: string
           created_at: string
           id: string
           image_path: string | null
           is_active: boolean
           kind: string
+          link_url: string | null
+          media_kind: string
           sort: number
           subtitle: string | null
           title: string | null
+          video_path: string | null
+          youtube_url: string | null
         }
         Insert: {
+          alt_text?: string | null
           bg_color?: string
           created_at?: string
           id?: string
           image_path?: string | null
           is_active?: boolean
           kind?: string
+          link_url?: string | null
+          media_kind?: string
           sort?: number
           subtitle?: string | null
           title?: string | null
+          video_path?: string | null
+          youtube_url?: string | null
         }
         Update: {
+          alt_text?: string | null
           bg_color?: string
           created_at?: string
           id?: string
           image_path?: string | null
           is_active?: boolean
           kind?: string
+          link_url?: string | null
+          media_kind?: string
           sort?: number
           subtitle?: string | null
           title?: string | null
+          video_path?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -910,10 +1419,58 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      applicants: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          programme: string | null
+          school: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: never
+          id?: string | null
+          last_name?: never
+          programme?: string | null
+          school?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: never
+          id?: string | null
+          last_name?: never
+          programme?: string | null
+          school?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      can_access_player: { Args: { _player: string }; Returns: boolean }
+      consume_public_intake_rate_limit: {
+        Args: {
+          p_identifier_hash: string
+          p_max_requests: number
+          p_operation: string
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      create_parent_access_request_limited: {
+        Args: {
+          p_email: string
+          p_guardian_name: string
+          p_reference_number: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -923,7 +1480,10 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
-      player_is_public: { Args: { _player: string }; Returns: boolean }
+      replace_news_post_media: {
+        Args: { p_media: Json; p_post_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "parent" | "player" | "coach" | "admin" | "owner"

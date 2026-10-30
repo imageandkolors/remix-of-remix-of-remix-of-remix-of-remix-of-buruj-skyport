@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { httpError } from "@/lib/http-error";
 
 const statusSchema = z.enum(["submitted", "under_review", "shortlisted", "accepted", "declined"]);
 
@@ -20,7 +21,7 @@ async function getRole(context: { supabase: SupabaseClient<Database>; userId: st
       : roles.includes("coach")
         ? "coach"
         : null;
-  if (!role) throw new Error("Staff access required");
+  if (!role) throw httpError(403, "Staff access required");
   return role;
 }
 
@@ -75,7 +76,7 @@ export const updateApplicationReview = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const role = await getRole(context);
-    if (role !== "admin" && role !== "owner") throw new Error("Admin access required");
+    if (role !== "admin" && role !== "owner") throw httpError(403, "Admin access required");
 
     const { data: current, error: currentError } = await context.supabase
       .from("applications")
