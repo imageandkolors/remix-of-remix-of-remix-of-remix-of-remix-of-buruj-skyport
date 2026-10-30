@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Activity, ArrowUpRight, BarChart3, ClipboardList, TrendingUp } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Activity,
+  ArrowUpRight,
+  BarChart3,
+  ClipboardList,
+  Mail,
+  Phone,
+  TrendingUp,
+} from "lucide-react";
 import { getStaffDashboard } from "@/lib/staff.functions";
+import { listIntake, updateIntakeStatus } from "@/lib/intake.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -194,7 +204,157 @@ function DashboardPage() {
             </div>
           </aside>
         </section>
+        <IntakeInbox />
       </div>
+    </div>
+  );
+}
+
+function IntakeInbox() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["public-intake"], queryFn: () => listIntake() });
+  const data = q.data ?? { enquiries: [], trials: [] };
+
+  async function setStatus(type: "enquiry" | "trial", id: string, status: string) {
+    try {
+      await updateIntakeStatus({ data: { type, id, status } });
+      await qc.invalidateQueries({ queryKey: ["public-intake"] });
+      toast.success("Status updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update status");
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <p className="text-sm font-medium text-muted-foreground">Public website submissions</p>
+      <h2 className="text-lg font-semibold">Enquiries and trial registrations</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Review submissions, use the email or phone link to reply, then update the status.
+      </p>
+      {q.isLoading ? (
+        <p className="py-6 text-center text-muted-foreground">Loading intake…</p>
+      ) : q.error ? (
+        <p className="py-6 text-center text-destructive">Could not load public submissions.</p>
+      ) : (
+        <div className="mt-5 grid gap-6 xl:grid-cols-2">
+          <IntakeList
+            title="Contact enquiries"
+            empty="No contact enquiries yet."
+            rows={data.enquiries as IntakeRow[]}
+            type="enquiry"
+            statuses={["new", "in_progress", "resolved", "archived"]}
+            onStatus={setStatus}
+          >
+            {(row) => (
+              <>
+                <p className="font-semibold">{row.name || "Unnamed contact"}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{row.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Interested in: {row.programme || "General"}
+                </p>
+                <ContactLinks email={row.email} phone={row.phone} />
+              </>
+            )}
+          </IntakeList>
+          <IntakeList
+            title="Trial registrations"
+            empty="No trial registrations yet."
+            rows={data.trials as IntakeRow[]}
+            type="trial"
+            statuses={["new", "contacted", "scheduled", "completed", "declined"]}
+            onStatus={setStatus}
+          >
+            {(row) => (
+              <>
+                <p className="font-semibold">{row.player_name || "Unnamed player"}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Guardian: {row.guardian_name} · {row.programme || "Programme not selected"}
+                </p>
+                <ContactLinks email={row.guardian_email} phone={row.guardian_phone} />
+              </>
+            )}
+          </IntakeList>
+        </div>
+      )}
+    </section>
+  );
+}
+
+type IntakeRow = Record<string, string | null>;
+
+function IntakeList({
+  title,
+  empty,
+  rows,
+  type,
+  statuses,
+  onStatus,
+  children,
+}: {
+  title: string;
+  empty: string;
+  rows: IntakeRow[];
+  type: "enquiry" | "trial";
+  statuses: string[];
+  onStatus: (type: "enquiry" | "trial", id: string, status: string) => void;
+  children: (row: IntakeRow) => React.ReactNode;
+}) {
+  return (
+    <div>
+      <h3 className="font-semibold">
+        {title} ({rows.length})
+      </h3>
+      {rows.length === 0 ? (
+        <p className="py-5 text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <div className="mt-3 divide-y rounded-xl border">
+          {rows.map((row) => (
+            <div key={row.id} className="p-3">
+              {children(row)}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {row.created_at ? new Date(row.created_at).toLocaleString() : ""}
+                </span>
+                <select
+                  value={row.status ?? statuses[0]}
+                  onChange={(e) => onStatus(type, row.id!, e.target.value)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  aria-label={`${title} status`}
+                >
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status.replace("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContactLinks({ email, phone }: { email: string | null; phone: string | null }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-3 text-sm">
+      {email && (
+        <a
+          className="inline-flex items-center gap-1 text-primary underline"
+          href={`mailto:${email}`}
+        >
+          <Mail className="h-3.5 w-3.5" />
+          {email}
+        </a>
+      )}
+      {phone && (
+        <a className="inline-flex items-center gap-1 text-primary underline" href={`tel:${phone}`}>
+          <Phone className="h-3.5 w-3.5" />
+          {phone}
+        </a>
+      )}
     </div>
   );
 }

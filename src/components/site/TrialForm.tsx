@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { submitTrialRegistration } from "@/lib/intake.functions";
 
 const schema = z.object({
   player_name: z.string().trim().min(2, "Enter the player's name").max(120),
@@ -35,20 +35,24 @@ export function TrialForm({ onDone }: { onDone?: () => void }) {
     }
     setLoading(true);
     const d = parsed.data;
-    const { error } = await supabase.from("trial_registrations").insert({
-      player_name: d.player_name,
-      guardian_name: d.guardian_name,
-      guardian_phone: d.guardian_phone,
-      position: d.position || null,
-      programme: d.programme || null,
-      date_of_birth: d.date_of_birth || null,
-      guardian_email: d.guardian_email || null,
-    });
-    setLoading(false);
-    if (error) {
+    try {
+      await submitTrialRegistration({
+        data: {
+          player_name: d.player_name,
+          guardian_name: d.guardian_name,
+          guardian_phone: d.guardian_phone,
+          position: d.position || null,
+          programme: d.programme || null,
+          date_of_birth: d.date_of_birth || null,
+          guardian_email: d.guardian_email || null,
+        },
+      });
+    } catch {
       toast.error("Could not submit. Please try again.");
+      setLoading(false);
       return;
     }
+    setLoading(false);
     toast.success("Trial registration received! Our team will contact you.");
     form.reset();
     onDone?.();

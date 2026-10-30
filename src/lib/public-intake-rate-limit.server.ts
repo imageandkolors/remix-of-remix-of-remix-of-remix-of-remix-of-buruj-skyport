@@ -1,4 +1,5 @@
-type PublicIntakeOperation = "application" | "cv" | "parent_access" | "application_upload";
+type PublicIntakeOperation =
+  "application" | "cv" | "parent_access" | "application_upload" | "enquiry" | "trial";
 
 /**
  * Atomically limits repeated public submissions by a pseudonymous identifier.

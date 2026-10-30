@@ -4,7 +4,6 @@ import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { SectionHeading, Reveal } from "@/components/site/Reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SITE } from "@/lib/site";
 import { useSiteSettings, waLinkFor } from "@/lib/use-site-settings";
 import { getContactPage } from "@/lib/page-settings.functions";
+import { submitEnquiry } from "@/lib/intake.functions";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -61,18 +61,22 @@ function Contact() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from("enquiries").insert({
-      name: parsed.data.name,
-      message: parsed.data.message,
-      phone: parsed.data.phone || null,
-      programme: parsed.data.programme || null,
-      email: parsed.data.email || null,
-    });
-    setLoading(false);
-    if (error) {
+    try {
+      await submitEnquiry({
+        data: {
+          name: parsed.data.name,
+          message: parsed.data.message,
+          phone: parsed.data.phone || null,
+          programme: parsed.data.programme || null,
+          email: parsed.data.email || null,
+        },
+      });
+    } catch {
       toast.error("Could not send. Please try again.");
+      setLoading(false);
       return;
     }
+    setLoading(false);
     toast.success("Thanks! Our admissions team will be in touch.");
     form.reset();
   }
