@@ -25,6 +25,7 @@ import { Route as AuthenticatedManageProgrammesRouteImport } from './routes/_aut
 import { Route as AuthenticatedPageSettingsRouteImport } from './routes/_authenticated/page-settings'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as NewsIndexRouteImport } from './routes/news.index'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as PlayersIndexRouteImport } from './routes/players.index'
@@ -113,6 +114,11 @@ const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   path: '/squad',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const NewsIndexRoute = NewsIndexRouteImport.update({
   id: '/news/',
   path: '/news/',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/page-settings': typeof AuthenticatedPageSettingsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/page-settings': typeof AuthenticatedPageSettingsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/_authenticated/page-settings': typeof AuthenticatedPageSettingsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/news/$slug': typeof NewsSlugRoute
   '/players/$slug': typeof PlayersSlugRoute
   '/programmes/$slug': typeof ProgrammesSlugRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/page-settings'
     | '/settings'
     | '/squad'
+    | '/users'
     | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/page-settings'
     | '/settings'
     | '/squad'
+    | '/users'
     | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/page-settings'
     | '/_authenticated/settings'
     | '/_authenticated/squad'
+    | '/_authenticated/users'
     | '/news/$slug'
     | '/players/$slug'
     | '/programmes/$slug'
@@ -421,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSquadRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/news/': {
       id: '/news/'
       path: '/news'
@@ -473,6 +492,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPageSettingsRoute: typeof AuthenticatedPageSettingsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -482,6 +502,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPageSettingsRoute: AuthenticatedPageSettingsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
