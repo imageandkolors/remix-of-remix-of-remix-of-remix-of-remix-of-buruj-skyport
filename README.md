@@ -72,6 +72,10 @@ GitHub is optional. You can transfer the source with FTP or upload a ZIP through
 
 ## Deployment targets
 
+## Admin user management
+
+Administrators can open **Admin → Users** at `/users` to invite new users, assign or revoke the parent, player, coach, admin, and owner roles, suspend or reactivate accounts, and permanently delete accounts. Auth administration runs only in server functions with the Supabase service-role key; it is never exposed to the browser. The connected Supabase project enforces the matching safeguards in its admin user-management migration: only owners can manage owner accounts, administrators cannot manage themselves, and the final active owner or administrator cannot be removed.
+
 The repository keeps the Node.js server as the default build so the same source works on cPanel, Railway, Fly.io, Docker, and a regular VPS. The provider-specific files are committed at the repository root:
 
 - `Dockerfile` is the production image for Fly.io, Railway Docker deployments, and other container hosts.

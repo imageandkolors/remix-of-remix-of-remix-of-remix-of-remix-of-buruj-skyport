@@ -1454,6 +1454,42 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_user_suspensions: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          reason: string | null
+          suspended_at: string
+          suspended_by: string
+          user_id: string
+        }[]
+      }
+      admin_log_user_action: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_details?: Json
+          p_target_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_user_roles: {
+        Args: {
+          p_action?: string
+          p_actor_id: string
+          p_roles: Database["public"]["Enums"]["app_role"][]
+          p_target_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_user_suspension: {
+        Args: {
+          p_actor_id: string
+          p_reason?: string | null
+          p_suspended: boolean
+          p_target_id: string
+        }
+        Returns: undefined
+      }
       consume_public_intake_rate_limit: {
         Args: {
           p_identifier_hash: string
