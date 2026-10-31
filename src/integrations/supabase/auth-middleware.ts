@@ -94,6 +94,13 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       throw new Error("Unauthorized: No user ID found in token");
     }
 
+    const { data: isActive, error: activeError } = await supabase.rpc("is_user_active", {
+      _user_id: data.claims.sub,
+    });
+    if (activeError || isActive === false) {
+      throw new Error("Unauthorized: Account is suspended");
+    }
+
     return next({
       context: {
         supabase,
