@@ -64,7 +64,7 @@ The checked-in `supabase/config.toml` targets the `buruj-skyport-staging` projec
 
 ### Troubleshooting admin data screens
 
-The `/users` page and public enquiries/trial inbox use the server-only Supabase admin client. If either screen fails while sign-in works, confirm `SUPABASE_SERVICE_ROLE_KEY` is set in **Setup Node.js App → Environment variables**, without a `VITE_` prefix, and that it belongs to the same project as `SUPABASE_URL` and the build-time `VITE_SUPABASE_URL`. Save the setting and restart the Node.js app. Also confirm the target project has the admin-user migrations (`0019` and `0022`) and public contact/trial migration (`0020`) applied. Never work around this by exposing the service-role key or adding public table policies.
+The `/users` page, public enquiries/trial inbox, and admin notifications use the server-only Supabase admin client. If a screen fails while sign-in works, set `SUPABASE_SERVICE_ROLE_KEY` in the deployment's server environment (for Vercel: **Project Settings → Environment Variables**; for cPanel: **Setup Node.js App → Environment variables**). Do not use a `VITE_` prefix. The key must belong to the same project as `SUPABASE_URL` and the build-time `VITE_SUPABASE_URL`; redeploy on Vercel or restart the Node.js app on cPanel after changing it. Also confirm the target project has the admin-user migrations (`0019` and `0022`) and public contact/trial migration (`0020`) applied. Never work around this by exposing the service-role key or adding public table policies.
 
 GitHub is optional. You can transfer the source with FTP or upload a ZIP through File Manager; Git integration only automates fetching future code changes.
 

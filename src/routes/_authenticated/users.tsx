@@ -39,15 +39,10 @@ import {
   updateManagedUserRoles,
   type ManagedUser,
 } from "@/lib/user-management.functions";
+import { adminLoadErrorMessage, safeAdminErrorMessage } from "@/lib/admin-ui-errors";
 
 type AppRole = "parent" | "player" | "coach" | "admin" | "owner";
 type ConfirmAction = { kind: "suspend" | "reactivate" | "delete"; user: ManagedUser } | null;
-
-function safeLoadErrorMessage(error: unknown, fallback: string) {
-  const message = error instanceof Error ? error.message.trim() : "";
-  if (!message || /<!doctype\s+html|<html[\s>]/i.test(message)) return fallback;
-  return message;
-}
 
 const ROLE_OPTIONS: { role: AppRole; label: string; description: string }[] = [
   { role: "parent", label: "Parent", description: "Parent portal account" },
@@ -200,6 +195,12 @@ function UserManagementPage() {
           </div>
           <Button
             onClick={() => setInviteOpen(true)}
+            disabled={!usersQuery.data || usersQuery.isError}
+            title={
+              usersQuery.isError
+                ? "Resolve the account-list error before inviting users"
+                : undefined
+            }
             className="shrink-0 font-display font-bold uppercase"
           >
             <MailPlus className="h-4 w-4" /> Invite user
@@ -207,11 +208,23 @@ function UserManagementPage() {
         </header>
 
         {usersQuery.isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-            {safeLoadErrorMessage(
-              usersQuery.error,
-              "Could not load user accounts. Verify SUPABASE_SERVICE_ROLE_KEY is set in the cPanel Node.js runtime for the same project as SUPABASE_URL, then restart the app. Do not prefix the key with VITE_.",
-            )}
+          <div
+            role="alert"
+            className="mb-4 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="min-w-0 break-words">
+              {adminLoadErrorMessage(usersQuery.error, "user accounts")}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => void usersQuery.refetch()}
+              disabled={usersQuery.isFetching}
+            >
+              {usersQuery.isFetching ? "Retrying…" : "Retry"}
+            </Button>
           </div>
         ) : null}
 
@@ -220,8 +233,11 @@ function UserManagementPage() {
             <div>
               <h2 className="text-lg font-semibold">Accounts</h2>
               <p className="text-sm text-muted-foreground">
-                {usersQuery.data ? `${usersQuery.data.total} total accounts` : "Loading accounts…"}
-                {search ? " · filtering this page" : " · 50 accounts per page"}
+                {usersQuery.data
+                  ? `${usersQuery.data.total} total accounts${search ? " · filtering this page" : " · 50 accounts per page"}`
+                  : usersQuery.isLoading
+                    ? "Loading accounts…"
+                    : "Account list unavailable"}
               </p>
             </div>
             <div className="relative w-full sm:max-w-xs">
@@ -252,10 +268,16 @@ function UserManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {usersQuery.isLoading ? (
+                {usersQuery.isLoading && !usersQuery.data ? (
                   <tr>
                     <td colSpan={5} className="px-3 py-10 text-center text-muted-foreground">
                       Loading users…
+                    </td>
+                  </tr>
+                ) : usersQuery.isError && !usersQuery.data ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-10 text-center text-muted-foreground">
+                      Accounts could not be loaded. Resolve the error above and retry.
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
@@ -379,13 +401,17 @@ function UserManagementPage() {
 
           <div className="mt-4 flex items-center justify-between border-t pt-4">
             <p className="text-xs text-muted-foreground">
-              Page {currentPage} of {lastPage}
+              {usersQuery.data
+                ? `Page ${currentPage} of ${lastPage}`
+                : usersQuery.isLoading
+                  ? "Loading page…"
+                  : "Page unavailable"}
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={currentPage <= 1 || usersQuery.isFetching}
+                disabled={!usersQuery.data || currentPage <= 1 || usersQuery.isFetching}
                 onClick={() => setPage((value) => Math.max(1, value - 1))}
               >
                 <ChevronLeft className="h-4 w-4" /> Previous
@@ -393,7 +419,7 @@ function UserManagementPage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={currentPage >= lastPage || usersQuery.isFetching}
+                disabled={!usersQuery.data || currentPage >= lastPage || usersQuery.isFetching}
                 onClick={() => setPage((value) => Math.min(lastPage, value + 1))}
               >
                 Next <ChevronRight className="h-4 w-4" />
@@ -621,5 +647,5 @@ function formatDate(value: string) {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
+  return safeAdminErrorMessage(error, fallback);
 }

@@ -40,7 +40,7 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Set them in the server runtime environment (for example, the cPanel Node.js app settings). Never expose SUPABASE_SERVICE_ROLE_KEY to the browser or a VITE_* variable.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Set them in this deployment's server runtime environment. Never expose SUPABASE_SERVICE_ROLE_KEY to the browser or a VITE_* variable.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { listAdminNotifications, sendNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
+import { adminLoadErrorMessage, safeAdminErrorMessage } from "@/lib/admin-ui-errors";
 
 export function NotificationManager() {
   const queryClient = useQueryClient();
@@ -34,7 +35,7 @@ export function NotificationManager() {
       setUrl("/");
       await queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not send notification");
+      toast.error(safeAdminErrorMessage(error, "Could not send notification."));
     } finally {
       setSending(false);
     }
@@ -42,6 +43,26 @@ export function NotificationManager() {
 
   return (
     <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      {notifications.isError ? (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between xl:col-span-2"
+        >
+          <p className="min-w-0 break-words">
+            {adminLoadErrorMessage(notifications.error, "admin notifications")}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={() => void notifications.refetch()}
+            disabled={notifications.isFetching}
+          >
+            {notifications.isFetching ? "Retrying…" : "Retry"}
+          </Button>
+        </div>
+      ) : null}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-sky/10 p-2 text-sky">
@@ -87,7 +108,7 @@ export function NotificationManager() {
               <option value="admin">Admin devices only</option>
             </select>
           </div>
-          <Button type="submit" disabled={sending}>
+          <Button type="submit" disabled={sending || notifications.isError}>
             <Send className="mr-2 h-4 w-4" />
             {sending ? "Sending…" : "Send notification"}
           </Button>
@@ -98,10 +119,13 @@ export function NotificationManager() {
         <p className="text-sm font-medium text-muted-foreground">Admin alerts</p>
         <h2 className="text-lg font-semibold">Recent notifications</h2>
         <div className="mt-4 space-y-3">
-          {notifications.isLoading ? (
+          {notifications.isLoading && !notifications.data ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : null}
-          {notifications.data?.length ? (
+          ) : notifications.isError && !notifications.data ? (
+            <p className="text-sm text-muted-foreground">
+              Notification history is unavailable. Resolve the error above and retry.
+            </p>
+          ) : notifications.data?.length ? (
             notifications.data.slice(0, 6).map((notification) => (
               <div
                 key={notification.id}

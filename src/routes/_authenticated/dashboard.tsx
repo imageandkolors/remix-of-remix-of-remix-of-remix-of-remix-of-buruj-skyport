@@ -12,8 +12,10 @@ import {
 import { getStaffDashboard } from "@/lib/staff.functions";
 import { listIntake, updateIntakeStatus } from "@/lib/intake.functions";
 import { NotificationManager } from "@/components/staff/NotificationManager";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Route as AuthenticatedRoute } from "./route";
+import { adminLoadErrorMessage, safeAdminErrorMessage } from "@/lib/admin-ui-errors";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -48,7 +50,7 @@ const DEFAULT_DATA: DashboardData = {
 
 function DashboardPage() {
   const { canManageUsers } = AuthenticatedRoute.useRouteContext();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["staff-dashboard"],
     queryFn: async (): Promise<DashboardData> => getStaffDashboard(),
   });
@@ -66,14 +68,35 @@ function DashboardPage() {
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Admin dashboard</h1>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm">
-            <Activity className="h-3.5 w-3.5 text-emerald-500" />
-            Live intake data
+            <Activity className={`h-3.5 w-3.5 ${error ? "text-amber-500" : "text-emerald-500"}`} />
+            {error && data
+              ? "Showing last loaded data"
+              : data
+                ? "Live intake data"
+                : isLoading
+                  ? "Loading dashboard…"
+                  : "Dashboard unavailable"}
           </div>
         </header>
 
         {error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-            {error.message || "Unable to load the dashboard."}
+          <div
+            role="alert"
+            className="mb-4 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="min-w-0 break-words">
+              {safeAdminErrorMessage(error, "Unable to load the dashboard. Please retry.")}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying…" : "Retry"}
+            </Button>
           </div>
         ) : null}
 
@@ -81,25 +104,25 @@ function DashboardPage() {
           <Metric
             icon={ClipboardList}
             label="Total applicants"
-            value={dashboard.stats.total}
+            value={data ? dashboard.stats.total : "—"}
             accent="text-blue-500"
           />
           <Metric
             icon={TrendingUp}
             label="Accepted"
-            value={dashboard.stats.accepted}
+            value={data ? dashboard.stats.accepted : "—"}
             accent="text-emerald-500"
           />
           <Metric
             icon={BarChart3}
             label="Pending review"
-            value={dashboard.stats.pending}
+            value={data ? dashboard.stats.pending : "—"}
             accent="text-amber-500"
           />
           <Metric
             icon={ArrowUpRight}
             label="Declined"
-            value={dashboard.stats.declined}
+            value={data ? dashboard.stats.declined : "—"}
             accent="text-rose-500"
           />
         </section>
@@ -124,10 +147,16 @@ function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {isLoading ? (
+                  {isLoading && !data ? (
                     <tr>
                       <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
                         Loading dashboard…
+                      </td>
+                    </tr>
+                  ) : error && !data ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
+                        Application data is unavailable. See the message above and retry.
                       </td>
                     </tr>
                   ) : dashboard.recent.length === 0 ? (
@@ -175,9 +204,13 @@ function DashboardPage() {
               <div className="rounded-xl border border-border bg-muted/40 p-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Conversion</p>
                 <p className="mt-2 text-2xl font-bold">
-                  {dashboard.stats.total > 0
-                    ? `${Math.max(0, Math.round((dashboard.stats.accepted / dashboard.stats.total) * 100))}%`
-                    : "0%"}
+                  {data
+                    ? dashboard.stats.total > 0
+                      ? `${Math.max(0, Math.round((dashboard.stats.accepted / dashboard.stats.total) * 100))}%`
+                      : "0%"
+                    : isLoading
+                      ? "Loading…"
+                      : "—"}
                 </p>
               </div>
 
@@ -186,7 +219,11 @@ function DashboardPage() {
                   Action needed
                 </p>
                 <p className="mt-2 text-lg font-semibold text-amber-600 dark:text-amber-400">
-                  {dashboard.stats.pending} applications waiting
+                  {data
+                    ? `${dashboard.stats.pending} applications waiting`
+                    : isLoading
+                      ? "Loading…"
+                      : "Unavailable"}
                 </p>
               </div>
 
@@ -195,13 +232,17 @@ function DashboardPage() {
                   Latest update
                 </p>
                 <p className="mt-2 text-sm text-foreground">
-                  {dashboard.recent[0]?.created_at
-                    ? new Date(dashboard.recent[0].created_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "No recent activity"}
+                  {data
+                    ? dashboard.recent[0]?.created_at
+                      ? new Date(dashboard.recent[0].created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "No recent activity"
+                    : isLoading
+                      ? "Loading…"
+                      : "Unavailable"}
                 </p>
               </div>
             </div>
@@ -225,7 +266,7 @@ function IntakeInbox() {
       await qc.invalidateQueries({ queryKey: ["public-intake"] });
       toast.success("Status updated");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not update status");
+      toast.error(safeAdminErrorMessage(e, "Could not update submission status."));
     }
   }
 
@@ -236,12 +277,31 @@ function IntakeInbox() {
       <p className="mt-1 text-sm text-muted-foreground">
         Review submissions, use the email or phone link to reply, then update the status.
       </p>
-      {q.isLoading ? (
+      {q.isError ? (
+        <div
+          role="alert"
+          className="mt-4 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="min-w-0 break-words">
+            {adminLoadErrorMessage(q.error, "public website submissions")}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={() => void q.refetch()}
+            disabled={q.isFetching}
+          >
+            {q.isFetching ? "Retrying…" : "Retry"}
+          </Button>
+        </div>
+      ) : null}
+      {q.isLoading && !q.data ? (
         <p className="py-6 text-center text-muted-foreground">Loading intake…</p>
-      ) : q.error ? (
-        <p className="py-6 text-center text-destructive">
-          Could not load public submissions. Check the server-side SUPABASE_SERVICE_ROLE_KEY and
-          confirm it matches SUPABASE_URL; verify migration 0020 is applied to that project.
+      ) : q.error && !q.data ? (
+        <p className="py-6 text-center text-muted-foreground">
+          Submissions are unavailable. Resolve the error above and retry.
         </p>
       ) : (
         <div className="mt-5 grid gap-6 xl:grid-cols-2">
@@ -390,7 +450,7 @@ function Metric({
 }: {
   icon: typeof ClipboardList;
   label: string;
-  value: number;
+  value: number | string;
   accent: string;
 }) {
   return (
