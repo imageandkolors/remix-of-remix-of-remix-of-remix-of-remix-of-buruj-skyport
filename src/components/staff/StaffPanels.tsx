@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FileText, Sparkles } from "lucide-react";
+import { ClipboardCheck, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  analyzeApplication,
+  reviewApplicationCompleteness,
   decideAccessRequest,
   getApplicationDocuments,
   listAccessRequests,
@@ -41,12 +41,12 @@ export function ApplicationInsights({
   async function run() {
     setBusy(true);
     try {
-      const r = await analyzeApplication({ data: { applicationId } });
+      const r = await reviewApplicationCompleteness({ data: { applicationId } });
       setResult(r);
       setWhen(r.assessed_at);
       qc.invalidateQueries({ queryKey: ["staff-dashboard"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI review failed");
+      toast.error(e instanceof Error ? e.message : "Checklist review failed");
     } finally {
       setBusy(false);
     }
@@ -87,10 +87,10 @@ export function ApplicationInsights({
       <div className="rounded-lg border bg-secondary/60 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-2 font-display text-lg font-bold uppercase text-navy">
-            <Sparkles className="h-5 w-5 text-gold" /> AI admissions review
+            <ClipboardCheck className="h-5 w-5 text-gold" /> Application completeness checklist
           </h3>
           <Button size="sm" onClick={run} disabled={busy}>
-            {busy ? "Reviewing…" : result ? "Re-run review" : "Analyse with AI"}
+            {busy ? "Checking…" : result ? "Run checklist again" : "Run checklist"}
           </Button>
         </div>
         {result ? (
@@ -101,15 +101,15 @@ export function ApplicationInsights({
             <List title="Suggested follow-up questions" items={result.questions} />
             {when && (
               <p className="text-xs text-muted-foreground">
-                Generated {new Date(when).toLocaleString()} · AI suggestions — always verify before
-                deciding.
+                Checked {new Date(when).toLocaleString()} · Administrative checklist only; verify
+                details and make admissions decisions manually.
               </p>
             )}
           </div>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            Summarises strengths, flags missing requirements and suggests questions for the family,
-            using the form answers and uploaded documents.
+            Checks required fields and document types using Supabase application data. No applicant
+            information is sent to an external AI service.
           </p>
         )}
       </div>

@@ -6,14 +6,9 @@ import type { Database, TablesUpdate } from "@/integrations/supabase/types";
 import { httpError } from "@/lib/http-error";
 
 async function requireStaff(context: { supabase: SupabaseClient<Database>; userId: string }) {
-  const { data, error } = await context.supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId);
+  const { data, error } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
   if (error) throw new Error("Could not verify staff access");
-  const roles = (data ?? []).map((r: { role: string }) => r.role);
-  if (!roles.some((r: string) => ["coach", "admin", "owner"].includes(r)))
-    throw httpError(403, "Staff access required");
+  if (!data) throw httpError(403, "Staff access required");
 }
 
 const rating = z.number().int().min(0).max(99).nullable();

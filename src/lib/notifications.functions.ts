@@ -4,9 +4,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { httpError } from "@/lib/http-error";
+import { isSafeNotificationPath, isTrustedPushEndpoint } from "@/lib/push-endpoint";
 
 const subscriptionSchema = z.object({
-  endpoint: z.string().url().max(2048),
+  endpoint: z
+    .string()
+    .url()
+    .max(2048)
+    .refine(isTrustedPushEndpoint, "Unsupported push service endpoint"),
   keys: z.object({
     p256dh: z.string().min(20).max(200),
     auth: z.string().min(10).max(200),
@@ -20,30 +25,27 @@ const notificationSchema = z.object({
     .string()
     .trim()
     .max(500)
-    .refine((value) => value.startsWith("/"), "Notification URLs must be site-relative"),
+    .refine(isSafeNotificationPath, "Notification URLs must be site-relative"),
   audience: z.enum(["public", "admin"]),
 });
 
-type StaffContext = { supabase: SupabaseClient<Database>; userId: string };
+type AdminContext = { supabase: SupabaseClient<Database>; userId: string };
 
-async function requireStaff(context: StaffContext) {
-  const { data, error } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (error) throw new Error("Could not verify staff access");
-  if (!data) throw httpError(403, "Staff access required");
+async function requireAdmin(context: AdminContext) {
+  const { data, error } = await context.supabase.rpc("is_admin", { _user_id: context.userId });
+  if (error) throw new Error("Could not verify administrator access");
+  if (!data) throw httpError(403, "Admin access required");
 }
 
 export const getPushConfig = createServerFn({ method: "GET" }).handler(async () => ({
-  publicKey: process.env.VAPID_PUBLIC_KEY ?? null,
+  publicKey: process.env["VAPID_PUBLIC_KEY"] ?? null,
 }));
 
 export const savePublicPushSubscription = createServerFn({ method: "POST" })
-  .inputValidator((d) => subscriptionSchema.parse(d))
+  .inputValidator((data) => subscriptionSchema.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as unknown as ReturnType<
-      typeof import("@supabase/supabase-js").createClient
-    >;
-    const { error } = await db.from("push_subscriptions").upsert(
+    const { error } = await supabaseAdmin.from("push_subscriptions").upsert(
       {
         endpoint: data.endpoint,
         p256dh: data.keys.p256dh,
@@ -62,14 +64,11 @@ export const savePublicPushSubscription = createServerFn({ method: "POST" })
 
 export const saveAdminPushSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => subscriptionSchema.parse(d))
+  .inputValidator((data) => subscriptionSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireStaff(context);
+    await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as unknown as ReturnType<
-      typeof import("@supabase/supabase-js").createClient
-    >;
-    const { error } = await db.from("push_subscriptions").upsert(
+    const { error } = await supabaseAdmin.from("push_subscriptions").upsert(
       {
         endpoint: data.endpoint,
         p256dh: data.keys.p256dh,
@@ -87,13 +86,10 @@ export const saveAdminPushSubscription = createServerFn({ method: "POST" })
   });
 
 export const removePushSubscription = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ endpoint: z.string().url().max(2048) }).parse(d))
+  .inputValidator((data) => z.object({ endpoint: subscriptionSchema.shape.endpoint }).parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as unknown as ReturnType<
-      typeof import("@supabase/supabase-js").createClient
-    >;
-    const { error } = await db
+    const { error } = await supabaseAdmin
       .from("push_subscriptions")
       .update({ disabled_at: new Date().toISOString() })
       .eq("endpoint", data.endpoint);
@@ -103,9 +99,9 @@ export const removePushSubscription = createServerFn({ method: "POST" })
 
 export const sendNotification = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => notificationSchema.parse(d))
+  .inputValidator((data) => notificationSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await requireStaff(context);
+    await requireAdmin(context);
     const { createNotification } = await import("@/lib/push.server");
     return createNotification(data, data.audience, context.userId);
   });
@@ -113,12 +109,9 @@ export const sendNotification = createServerFn({ method: "POST" })
 export const listAdminNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireStaff(context);
+    await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as unknown as ReturnType<
-      typeof import("@supabase/supabase-js").createClient
-    >;
-    const { data, error } = await db
+    const { data, error } = await supabaseAdmin
       .from("notifications")
       .select("id, title, body, url, audience, created_at")
       .eq("audience", "admin")

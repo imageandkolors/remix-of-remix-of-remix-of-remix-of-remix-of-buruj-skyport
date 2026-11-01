@@ -152,9 +152,10 @@ async function signPaths(paths: (string | null | undefined)[]) {
     return map;
   }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.storage
+  const { data, error } = await supabaseAdmin.storage
     .from("site-media")
     .createSignedUrls(list, 60 * 60 * 24 * 7);
+  if (error) throw new Error("Could not create signed Supabase media URLs");
   for (const r of data ?? []) if (r.path && r.signedUrl) map.set(r.path, r.signedUrl);
   return map;
 }

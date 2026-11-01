@@ -52,9 +52,10 @@ async function signImages(paths: (string | null | undefined)[]) {
     return map;
   }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.storage
+  const { data, error } = await supabaseAdmin.storage
     .from("site-media")
     .createSignedUrls(list, 60 * 60 * 24 * 7);
+  if (error) throw new Error("Could not create signed Supabase media URLs");
   for (const row of data ?? []) if (row.path && row.signedUrl) map.set(row.path, row.signedUrl);
   return map;
 }

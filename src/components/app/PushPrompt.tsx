@@ -4,6 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { isPushSupported, subscribeToPush } from "@/lib/push-client";
 import { getPushConfig } from "@/lib/notifications.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const DISMISSED_KEY = "bsa-push-prompt-dismissed";
@@ -12,28 +13,40 @@ export function PushPrompt() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
-  const isAdmin =
+  const isAdminArea =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/users") ||
     pathname.startsWith("/squad") ||
     pathname.startsWith("/content") ||
     pathname.startsWith("/settings") ||
     pathname.startsWith("/page-settings") ||
     pathname.startsWith("/manage-programmes");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!isPushSupported() || Notification.permission === "denied") return;
-    getPushConfig()
-      .then(({ publicKey }) => {
-        if (!cancelled && publicKey && !localStorage.getItem(DISMISSED_KEY)) {
-          window.setTimeout(() => setVisible(true), 3500);
+    async function preparePrompt() {
+      if (!isPushSupported() || Notification.permission === "denied") return;
+      let admin = false;
+      if (isAdminArea) {
+        const { data: auth } = await supabase.auth.getUser();
+        if (auth.user) {
+          const { data, error } = await supabase.rpc("is_admin", { _user_id: auth.user.id });
+          admin = !error && data === true;
         }
-      })
-      .catch(() => undefined);
+      }
+      if (cancelled) return;
+      setIsAdmin(admin);
+      const { publicKey } = await getPushConfig();
+      if (!cancelled && publicKey && !localStorage.getItem(DISMISSED_KEY)) {
+        window.setTimeout(() => setVisible(true), 3500);
+      }
+    }
+    void preparePrompt().catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAdminArea]);
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "1");

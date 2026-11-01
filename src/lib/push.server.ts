@@ -1,8 +1,6 @@
 import webpush from "web-push";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-const pushDb = supabaseAdmin as unknown as ReturnType<typeof createClient>;
+import { isTrustedPushEndpoint } from "@/lib/push-endpoint";
 
 type Audience = "public" | "admin";
 type PushPayload = { title: string; body: string; url: string };
@@ -15,14 +13,16 @@ type StoredNotification = PushPayload & {
 
 function vapidConfigured() {
   return Boolean(
-    process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT,
+    process.env["VAPID_PUBLIC_KEY"] &&
+    process.env["VAPID_PRIVATE_KEY"] &&
+    process.env["VAPID_SUBJECT"],
   );
 }
 
 function configureVapid() {
-  const subject = process.env.VAPID_SUBJECT;
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env["VAPID_SUBJECT"];
+  const publicKey = process.env["VAPID_PUBLIC_KEY"];
+  const privateKey = process.env["VAPID_PRIVATE_KEY"];
   if (!subject || !publicKey || !privateKey) return false;
   webpush.setVapidDetails(subject, publicKey, privateKey);
   return true;
@@ -33,7 +33,7 @@ export async function createNotification(
   audience: Audience,
   createdBy?: string,
 ) {
-  const { data, error } = await pushDb
+  const { data, error } = await supabaseAdmin
     .from("notifications")
     .insert({ ...payload, audience, created_by: createdBy ?? null })
     .select("id, title, body, url, audience, created_at")
@@ -48,7 +48,7 @@ export async function createNotification(
 export async function deliverPush(notification: StoredNotification) {
   if (!configureVapid()) return 0;
 
-  const { data: subscriptions, error } = await pushDb
+  const { data: subscriptions, error } = await supabaseAdmin
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")
     .eq("audience", notification.audience)
@@ -59,6 +59,13 @@ export async function deliverPush(notification: StoredNotification) {
   let delivered = 0;
   await Promise.all(
     (subscriptions ?? []).map(async (subscription) => {
+      if (!isTrustedPushEndpoint(subscription.endpoint)) {
+        await supabaseAdmin
+          .from("push_subscriptions")
+          .update({ disabled_at: new Date().toISOString() })
+          .eq("id", subscription.id);
+        return;
+      }
       try {
         await webpush.sendNotification(
           {
@@ -75,7 +82,7 @@ export async function deliverPush(notification: StoredNotification) {
       } catch (error) {
         const statusCode = (error as { statusCode?: number }).statusCode;
         if (statusCode === 404 || statusCode === 410) {
-          await pushDb
+          await supabaseAdmin
             .from("push_subscriptions")
             .update({ disabled_at: new Date().toISOString() })
             .eq("id", subscription.id);

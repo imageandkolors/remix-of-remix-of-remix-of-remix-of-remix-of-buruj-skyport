@@ -8,6 +8,12 @@ import { httpError } from "@/lib/http-error";
 const statusSchema = z.enum(["submitted", "under_review", "shortlisted", "accepted", "declined"]);
 
 async function getRole(context: { supabase: SupabaseClient<Database>; userId: string }) {
+  const { data: isStaff, error: staffError } = await context.supabase.rpc("is_staff", {
+    _user_id: context.userId,
+  });
+  if (staffError) throw new Error("Could not verify staff access");
+  if (!isStaff) throw httpError(403, "Staff access required");
+
   const { data, error } = await context.supabase
     .from("user_roles")
     .select("role")

@@ -8,6 +8,20 @@ import { AdSlot, SITE_URL, ShareBar, readingMinutes } from "@/components/site/Ne
 import { Button } from "@/components/ui/button";
 import { MediaLightbox, MediaThumb, type LightboxItem } from "@/components/site/MediaLightbox";
 
+function articleCanonicalUrl(rawCanonical: string | null, slug: string): string | null {
+  if (!SITE_URL) return null;
+  try {
+    const site = new URL(SITE_URL);
+    if (rawCanonical && /^https?:\/\//i.test(rawCanonical)) {
+      const candidate = new URL(rawCanonical);
+      if (candidate.origin === site.origin) return candidate.toString();
+    }
+    return new URL(`/news/${encodeURIComponent(slug)}`, site).toString();
+  } catch {
+    return null;
+  }
+}
+
 export const Route = createFileRoute("/news/$slug")({
   loader: async ({ context, params }) => {
     const a = await context.queryClient.ensureQueryData(newsArticleQuery(params.slug));
@@ -37,15 +51,7 @@ export const Route = createFileRoute("/news/$slug")({
           { name: "robots", content: "noindex" },
         ],
       };
-    const rawCanonical = loaderData.canonical;
-    const url =
-      rawCanonical &&
-      /^https?:\/\//i.test(rawCanonical) &&
-      !/(lovable\.app|vercel\.app)/i.test(rawCanonical)
-        ? rawCanonical
-        : SITE_URL
-          ? `${SITE_URL}/news/${params.slug}`
-          : null;
+    const url = articleCanonicalUrl(loaderData.canonical, params.slug);
     const t = loaderData.metaTitle || `${loaderData.title} — Buruj News`;
     const d =
       loaderData.metaDescription ||
@@ -158,14 +164,7 @@ function Article() {
   const { data: all = [] } = useQuery(newsQuery);
   const [activeMedia, setActiveMedia] = useState<LightboxItem | null>(null);
   if (!a) return null;
-  const url =
-    a.canonical_url &&
-    /^https?:\/\//i.test(a.canonical_url) &&
-    !/(lovable\.app|vercel\.app)/i.test(a.canonical_url)
-      ? a.canonical_url
-      : SITE_URL
-        ? `${SITE_URL}/news/${a.slug}`
-        : `/news/${a.slug}`;
+  const url = articleCanonicalUrl(a.canonical_url, a.slug) ?? `/news/${a.slug}`;
   const sameCat = all.filter((n) => n.id !== a.id && n.category === a.category);
   const related = [
     ...sameCat,

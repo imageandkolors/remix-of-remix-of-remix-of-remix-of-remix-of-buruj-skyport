@@ -38,13 +38,15 @@ export async function subscribeToPush(audience: "public" | "admin") {
       applicationServerKey: decodeBase64Url(publicKey),
     }));
   const json = subscription.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+  const p256dh = json.keys?.["p256dh"];
+  const auth = json.keys?.["auth"];
+  if (!json.endpoint || !p256dh || !auth) {
     throw new Error("The device returned an incomplete push subscription");
   }
 
   const payload = {
     endpoint: json.endpoint,
-    keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+    keys: { p256dh, auth },
   };
   if (audience === "admin") {
     await saveAdminPushSubscription({ data: payload });

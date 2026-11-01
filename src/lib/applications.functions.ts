@@ -3,24 +3,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { httpError } from "@/lib/http-error";
+import {
+  buildApplicationCompletenessReview,
+  DOCUMENT_TYPES,
+  requiredDocs,
+} from "./application-checklist";
+import type { CompletenessReview, DocType } from "./application-checklist";
+export { DOCUMENT_TYPES, requiredDocs } from "./application-checklist";
+export type { DocType } from "./application-checklist";
 
-export const DOCUMENT_TYPES = {
-  birth_certificate: "Birth certificate",
-  passport_photo: "Passport photograph",
-  medical_report: "Medical report",
-  school_report: "Latest school report",
-  id_document: "Guardian ID",
-  other: "Other",
-} as const;
-export type DocType = keyof typeof DOCUMENT_TYPES;
 const docType = z.enum(Object.keys(DOCUMENT_TYPES) as [DocType, ...DocType[]]);
-
-export function requiredDocs(programme: string): DocType[] {
-  const base: DocType[] = ["birth_certificate", "passport_photo", "medical_report"];
-  return /education|play & study/i.test(programme) ? [...base, "school_report"] : base;
-}
 
 const ALLOWED = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic"];
 
@@ -254,6 +248,17 @@ async function requireAdmin(context: { supabase: SupabaseClient<Database>; userI
   if (!data) throw httpError(403, "Admin access required");
 }
 
+async function requireActiveAccount(context: {
+  supabase: SupabaseClient<Database>;
+  userId: string;
+}) {
+  const { data, error } = await context.supabase.rpc("is_user_active", {
+    _user_id: context.userId,
+  });
+  if (error) throw new Error("Could not verify account access");
+  if (!data) throw httpError(403, "This account is suspended");
+}
+
 export const listAccessRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -337,6 +342,7 @@ const PROGRESS = ["submitted", "under_review", "shortlisted", "accepted"] as con
 export const getMyPortal = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requireActiveAccount(context);
     const email = String((context.claims as { email?: string }).email ?? "").toLowerCase();
     if (!email) throw new Error("No email on account");
     const db = await admin();
@@ -394,6 +400,7 @@ export const updateMyContact = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await requireActiveAccount(context);
     const email = String((context.claims as { email?: string }).email ?? "").toLowerCase();
     const db = await admin();
     const { data: app } = await db
@@ -452,113 +459,48 @@ export const getApplicationDocuments = createServerFn({ method: "POST" })
     );
   });
 
-type Assessment = { summary: string; strengths: string[]; missing: string[]; questions: string[] };
-
-export const analyzeApplication = createServerFn({ method: "POST" })
+export const reviewApplicationCompleteness = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ applicationId: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }): Promise<Assessment & { assessed_at: string }> => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+  .handler(async ({ data, context }): Promise<CompletenessReview & { assessed_at: string }> => {
+    const { data: isStaff, error: roleError } = await context.supabase.rpc("is_staff", {
+      _user_id: context.userId,
+    });
+    if (roleError) throw new Error("Could not verify staff access");
     if (!isStaff) throw httpError(403, "Staff access required");
-    const { data: app } = await context.supabase
+    const { data: app, error: appError } = await context.supabase
       .from("applications")
-      .select("*")
+      .select(
+        "id, programme, player_name, date_of_birth, guardian_phone, guardian_email, address, motivation, consent",
+      )
       .eq("id", data.applicationId)
       .maybeSingle();
-    if (!app) throw new Error("Application not found or not assigned to you");
-    const { data: docs } = await context.supabase
+    if (appError) throw new Error("Could not load application details");
+    if (!app) throw httpError(404, "Application not found");
+    const { data: docs, error: documentsError } = await context.supabase
       .from("application_documents")
-      .select("document_type, original_filename, mime_type")
+      .select("document_type")
       .eq("application_id", app.id);
-    const required = requiredDocs(app.programme).map((t) => DOCUMENT_TYPES[t]);
-    const payload = {
+    if (documentsError) throw new Error("Could not load uploaded document types");
+
+    const result = buildApplicationCompletenessReview({
       programme: app.programme,
       player_name: app.player_name,
       date_of_birth: app.date_of_birth,
-      gender: app.gender,
-      position: app.position,
-      current_school: app.current_school,
-      current_class: app.current_class,
-      guardian_relationship: app.guardian_relationship,
-      guardian_phone_provided: Boolean(app.guardian_phone),
-      guardian_email_provided: Boolean(app.guardian_email),
-      address_provided: Boolean(app.address),
-      medical_notes: app.medical_notes,
+      guardian_phone: app.guardian_phone,
+      guardian_email: app.guardian_email,
+      address: app.address,
       motivation: app.motivation,
       consent: app.consent,
-      uploaded_documents: (docs ?? []).map((d) => ({
-        type: DOCUMENT_TYPES[d.document_type as DocType] ?? d.document_type,
-        file: d.original_filename,
-      })),
-      required_documents: required,
-      today: new Date().toISOString().slice(0, 10),
-    };
-    const schema = {
-      type: "object",
-      additionalProperties: false,
-      required: ["summary", "strengths", "missing", "questions"],
-      properties: {
-        summary: { type: "string" },
-        strengths: { type: "array", items: { type: "string" } },
-        missing: { type: "array", items: { type: "string" } },
-        questions: { type: "array", items: { type: "string" } },
-      },
-    };
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": process.env["LOVABLE_API_KEY"]!,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        stream: true,
-        store: false,
-        reasoning: { effort: "low" },
-        instructions:
-          "You are an admissions assistant for Buruj Sports Academy, a Nigerian football academy (ages 9-22). Review the application JSON. Write a 2-3 sentence summary, up to 5 strengths, every missing or weak requirement (missing required documents, missing date of birth, age outside the programme range, vague motivation, missing consent, unexplained medical notes), and 3-5 specific follow-up questions for the family. Be factual; never invent details. Keep each item under 25 words.",
-        input: JSON.stringify(payload),
-        text: { format: { type: "json_schema", name: "assessment", strict: true, schema } },
-      }),
+      uploadedDocumentTypes: (docs ?? []).map((document) => document.document_type as DocType),
     });
-    if (res.status === 429) throw new Error("AI is busy right now — try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits are used up for this workspace.");
-    if (!res.ok || !res.body) throw new Error("AI review failed");
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = "",
-      text = "";
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        const raw = line.slice(5).trim();
-        if (!raw || raw === "[DONE]") continue;
-        try {
-          const ev = JSON.parse(raw);
-          if (ev.type === "response.output_text.delta") text += ev.delta;
-        } catch {
-          /* partial */
-        }
-      }
-    }
-    let result: Assessment;
-    try {
-      result = JSON.parse(text);
-    } catch {
-      throw new Error("AI returned an unreadable answer");
-    }
     const assessed_at = new Date().toISOString();
     const db = await admin();
-    await db
+    const { error: saveError } = await db
       .from("applications")
-      .update({ ai_assessment: result, ai_assessed_at: assessed_at })
+      .update({ ai_assessment: result as Json, ai_assessed_at: assessed_at })
       .eq("id", app.id);
+    if (saveError) throw new Error("Could not save the application completeness review");
     return { ...result, assessed_at };
   });
 

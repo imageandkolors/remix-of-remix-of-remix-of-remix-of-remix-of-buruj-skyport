@@ -69,7 +69,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
-              <Link to="/auth" search={{ redirect: "/dashboard" }} className="hover:text-gold">
+              <Link
+                to="/auth"
+                search={{ redirect: "/dashboard", mode: "sign-in" }}
+                className="hover:text-gold"
+              >
                 Staff admin login
               </Link>
             </li>

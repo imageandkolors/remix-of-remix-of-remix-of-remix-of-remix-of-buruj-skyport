@@ -56,15 +56,15 @@ async function admin(context: any) {
 }
 async function sign(path: string | null) {
   if (!path) return null;
-  if (!process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+  if (!process.env["SUPABASE_SERVICE_ROLE_KEY"])
     return process.env["SUPABASE_URL"]
       ? `${process.env["SUPABASE_URL"]}/storage/v1/object/public/site-media/${path}`
       : null;
-  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.storage
+  const { data, error } = await supabaseAdmin.storage
     .from("site-media")
     .createSignedUrl(path, 60 * 60 * 24 * 7);
+  if (error) throw new Error("Could not create a signed Supabase media URL");
   return data?.signedUrl ?? null;
 }
 

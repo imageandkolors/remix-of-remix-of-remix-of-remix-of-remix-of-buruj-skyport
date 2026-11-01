@@ -13,6 +13,7 @@ import { getStaffDashboard } from "@/lib/staff.functions";
 import { listIntake, updateIntakeStatus } from "@/lib/intake.functions";
 import { NotificationManager } from "@/components/staff/NotificationManager";
 import { toast } from "sonner";
+import { Route as AuthenticatedRoute } from "./route";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -46,6 +47,7 @@ const DEFAULT_DATA: DashboardData = {
 };
 
 function DashboardPage() {
+  const { canManageUsers } = AuthenticatedRoute.useRouteContext();
   const { data, isLoading, error } = useQuery({
     queryKey: ["staff-dashboard"],
     queryFn: async (): Promise<DashboardData> => getStaffDashboard(),
@@ -205,7 +207,7 @@ function DashboardPage() {
             </div>
           </aside>
         </section>
-        <NotificationManager />
+        {canManageUsers ? <NotificationManager /> : null}
         <IntakeInbox />
       </div>
     </div>
@@ -255,7 +257,7 @@ function IntakeInbox() {
                 <p className="mt-2 text-xs text-muted-foreground">
                   Interested in: {row.programme || "General"}
                 </p>
-                <ContactLinks email={row.email} phone={row.phone} />
+                <ContactLinks email={row.email ?? null} phone={row.phone ?? null} />
               </>
             )}
           </IntakeList>
@@ -273,7 +275,10 @@ function IntakeInbox() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Guardian: {row.guardian_name} · {row.programme || "Programme not selected"}
                 </p>
-                <ContactLinks email={row.guardian_email} phone={row.guardian_phone} />
+                <ContactLinks
+                  email={row.guardian_email ?? null}
+                  phone={row.guardian_phone ?? null}
+                />
               </>
             )}
           </IntakeList>
@@ -283,7 +288,20 @@ function IntakeInbox() {
   );
 }
 
-type IntakeRow = Record<string, string | null>;
+type IntakeRow = {
+  id: string;
+  created_at: string | null;
+  status: string | null;
+  name?: string | null;
+  message?: string | null;
+  programme?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  player_name?: string | null;
+  guardian_name?: string | null;
+  guardian_email?: string | null;
+  guardian_phone?: string | null;
+};
 
 function IntakeList({
   title,
@@ -320,7 +338,7 @@ function IntakeList({
                 </span>
                 <select
                   value={row.status ?? statuses[0]}
-                  onChange={(e) => onStatus(type, row.id!, e.target.value)}
+                  onChange={(e) => onStatus(type, row.id, e.target.value)}
                   className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                   aria-label={`${title} status`}
                 >

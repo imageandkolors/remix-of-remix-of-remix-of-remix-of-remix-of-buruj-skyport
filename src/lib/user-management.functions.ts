@@ -2,216 +2,381 @@ import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { httpError } from "@/lib/http-error";
 
-type AppRole = Database["public"]["Enums"]["app_role"];
-type AuthContext = { supabase: SupabaseClient<Database>; userId: string };
+const ROLE_VALUES = ["parent", "player", "coach", "admin", "owner"] as const;
+type AppRole = (typeof ROLE_VALUES)[number];
+const roleSchema = z.enum(ROLE_VALUES);
+const roleArraySchema = z.array(roleSchema).max(ROLE_VALUES.length);
+const roleListSchema = roleArraySchema.refine(
+  (roles) => new Set(roles).size === roles.length,
+  "Choose each role only once",
+);
 
-const roleSchema = z.enum(["parent", "player", "coach", "admin", "owner"]);
-const rolesSchema = z
-  .array(roleSchema)
-  .max(5)
-  .refine((roles) => new Set(roles).size === roles.length);
-
-async function requireAdmin(context: AuthContext) {
+async function authorizeAdmin(context: {
+  supabase: SupabaseClient<Database>;
+  userId: string;
+}): Promise<{ isOwner: boolean }> {
   const { data, error } = await context.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId);
   if (error) throw new Error("Could not verify administrator access");
-  const roles = (data ?? []).map((row) => row.role);
+  const roles = (data ?? []).map((entry) => entry.role);
   if (!roles.includes("admin") && !roles.includes("owner")) {
-    throw httpError(403, "Administrator access required");
+    throw httpError(403, "Admin access required");
   }
   return { isOwner: roles.includes("owner") };
 }
 
-async function getSuspensions(userIds: string[]) {
-  if (userIds.length === 0) return [];
-  const { data, error } = await supabaseAdmin.rpc("admin_get_user_suspensions", {
-    p_user_ids: userIds,
-  });
-  if (error) throw new Error("Could not load user status");
-  return data ?? [];
+async function getAdminClient() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
 }
 
-async function listManagedUsers() {
-  const [{ data: authData, error: authError }, { data: roleRows, error: roleError }] =
-    await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      supabaseAdmin.from("user_roles").select("user_id, role"),
-    ]);
-  if (authError || roleError) throw new Error("Could not load users");
-
-  const users = authData.users ?? [];
-  const ids = users.map((user) => user.id);
-  const suspensions = await getSuspensions(ids);
-  const rolesByUser = new Map<string, AppRole[]>();
-  for (const row of roleRows ?? []) {
-    const roles = rolesByUser.get(row.user_id) ?? [];
-    roles.push(row.role);
-    rolesByUser.set(row.user_id, roles);
-  }
-  const suspensionByUser = new Map(suspensions.map((row) => [row.user_id, row]));
-
-  return users
-    .map((user) => {
-      const suspension = suspensionByUser.get(user.id);
-      return {
-        id: user.id,
-        email: user.email ?? "",
-        fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
-        phone: user.phone ?? null,
-        createdAt: user.created_at,
-        lastSignInAt: user.last_sign_in_at ?? null,
-        emailConfirmed: Boolean(user.email_confirmed_at),
-        roles: rolesByUser.get(user.id) ?? [],
-        suspended: Boolean(suspension),
-        suspensionReason: suspension?.reason ?? null,
-      };
-    })
-    .sort((a, b) => a.email.localeCompare(b.email));
+function throwManagementRpcError(
+  error: { message: string; code?: string } | null,
+  fallback: string,
+): never {
+  if (!error) throw new Error(fallback);
+  if (error.code === "42501")
+    throw httpError(403, "You are not allowed to manage this account or role.");
+  if (error.code === "23514") throw httpError(409, error.message);
+  if (error.code === "P0002") throw httpError(404, "The user account no longer exists.");
+  if (error.code === "22023")
+    throw httpError(400, "The submitted user-management values are invalid.");
+  throw new Error(fallback);
 }
 
-export const listManagedUsersFn = createServerFn({ method: "GET" })
+export type ManagedUser = {
+  id: string;
+  email: string;
+  displayName: string | null;
+  roles: AppRole[];
+  createdAt: string;
+  lastSignInAt: string | null;
+  emailConfirmedAt: string | null;
+  invitedAt: string | null;
+  bannedUntil: string | null;
+  suspendedAt: string | null;
+  suspensionReason: string | null;
+};
+
+export const getUserManagementPage = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await requireAdmin(context);
-    return listManagedUsers();
+  .inputValidator((input) =>
+    z.object({ page: z.number().int().min(1).max(10000).default(1) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const actor = await authorizeAdmin(context);
+    const admin = await getAdminClient();
+    const { data: authPage, error: authError } = await admin.auth.admin.listUsers({
+      page: data.page,
+      perPage: 50,
+    });
+    if (authError) throw new Error("Could not load user accounts");
+
+    const authUsers = authPage.users;
+    const userIds = authUsers.map((user) => user.id);
+    const { data: roleRows, error: rolesError } = userIds.length
+      ? await admin.from("user_roles").select("user_id, role").in("user_id", userIds).limit(250)
+      : { data: [], error: null };
+    if (rolesError) throw new Error("Could not load user roles");
+
+    const { data: ownerRows, error: ownerError } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "owner")
+      .limit(100);
+    if (ownerError) throw new Error("Could not verify owner assignments");
+
+    const allStateIds = [...new Set([...userIds, ...(ownerRows ?? []).map((row) => row.user_id)])];
+    const suspensionBatches = await Promise.all(
+      Array.from({ length: Math.ceil(allStateIds.length / 100) }, (_, index) =>
+        admin.rpc("admin_get_user_suspensions", {
+          p_user_ids: allStateIds.slice(index * 100, (index + 1) * 100),
+        }),
+      ),
+    );
+    if (suspensionBatches.some(({ error }) => error)) {
+      throw new Error("Could not load account access state");
+    }
+    const suspensionRows = suspensionBatches.flatMap(({ data }) => data ?? []);
+
+    const roleMap = new Map<string, AppRole[]>();
+    for (const row of roleRows ?? []) {
+      const roles = roleMap.get(row.user_id) ?? [];
+      roles.push(row.role);
+      roleMap.set(row.user_id, roles);
+    }
+    const suspensionMap = new Map((suspensionRows ?? []).map((row) => [row.user_id, row]));
+    const activeOwnerExists = (ownerRows ?? []).some((row) => !suspensionMap.has(row.user_id));
+
+    const users: ManagedUser[] = authUsers
+      .filter((user) => typeof user.email === "string")
+      .map((user) => {
+        const metadataName = user.user_metadata["full_name"];
+        const state = suspensionMap.get(user.id);
+        return {
+          id: user.id,
+          email: user.email!,
+          displayName: typeof metadataName === "string" ? metadataName.slice(0, 120) : null,
+          roles: (roleMap.get(user.id) ?? []).sort(
+            (a, b) => ROLE_VALUES.indexOf(a) - ROLE_VALUES.indexOf(b),
+          ),
+          createdAt: user.created_at,
+          lastSignInAt: user.last_sign_in_at ?? null,
+          emailConfirmedAt: user.email_confirmed_at ?? null,
+          invitedAt: user.invited_at ?? null,
+          bannedUntil: user.banned_until ?? null,
+          suspendedAt: state?.suspended_at ?? null,
+          suspensionReason: state?.reason ?? null,
+        };
+      });
+
+    return {
+      users,
+      page: data.page,
+      total: authPage.total,
+      lastPage: Math.max(1, Math.ceil((authPage.total ?? 0) / 50)),
+      actorId: context.userId,
+      isOwner: actor.isOwner,
+      canAssignOwner: actor.isOwner || !activeOwnerExists,
+    };
   });
+
+type SuspensionRow = {
+  user_id: string;
+  suspended_at: string;
+  suspended_by: string | null;
+  reason: string | null;
+};
+
+const inviteSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(255)
+    .transform((email) => email.toLowerCase()),
+  roles: roleArraySchema
+    .min(1)
+    .refine((roles) => new Set(roles).size === roles.length, "Choose each role only once"),
+});
+
+function inviteRedirectUrl(roles: AppRole[]): string {
+  const configured = process.env["SITE_URL"];
+  if (!configured)
+    throw new Error("Set SITE_URL in the server runtime before sending invitations.");
+  let site: URL;
+  try {
+    site = new URL(configured);
+  } catch {
+    throw new Error("SITE_URL must be a valid production website origin.");
+  }
+  const local = site.hostname === "localhost" || site.hostname === "127.0.0.1";
+  if (site.protocol !== "https:" && !(local && site.protocol === "http:")) {
+    throw new Error("User invitations require an HTTPS SITE_URL.");
+  }
+  const invite = new URL("/auth", site);
+  invite.searchParams.set("mode", "invite");
+  invite.searchParams.set(
+    "redirect",
+    roles.some((role) => role === "admin" || role === "owner" || role === "coach")
+      ? "/dashboard"
+      : "/portal",
+  );
+  return invite.toString();
+}
 
 export const inviteManagedUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        email: z.string().trim().email().max(254),
-        fullName: z.string().trim().min(2).max(120),
-        roles: rolesSchema.min(1),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const { isOwner } = await requireAdmin(context);
-    if (data.roles.includes("owner") && !isOwner) {
-      throw httpError(403, "Only an owner may invite an owner");
+  .inputValidator((input) => inviteSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    await authorizeAdmin(context);
+    const admin = await getAdminClient();
+    const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
+      data.email,
+      {
+        redirectTo: inviteRedirectUrl(data.roles),
+      },
+    );
+    if (inviteError || !invite.user) {
+      throw new Error(
+        "Could not send the invitation. Check the address and whether an account already exists.",
+      );
     }
 
-    const siteUrl = process.env.VITE_SITE_URL;
-    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-      data: { full_name: data.fullName },
-      ...(siteUrl ? { redirectTo: `${siteUrl.replace(/\/$/, "")}/auth` } : {}),
-    });
-    if (error || !invited.user) throw new Error(error?.message || "Could not invite user");
-
-    const userId = invited.user.id;
-    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
-      id: userId,
-      full_name: data.fullName,
-    });
-    if (profileError) {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw new Error("Could not create the user profile");
-    }
-
-    const { error: roleError } = await supabaseAdmin.rpc("admin_set_user_roles", {
-      p_action: "invite",
+    const { error: roleError } = await admin.rpc("admin_set_user_roles", {
       p_actor_id: context.userId,
+      p_target_id: invite.user.id,
       p_roles: data.roles,
-      p_target_id: userId,
+      p_action: "invite",
     });
     if (roleError) {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw new Error(roleError.message || "Could not assign the initial role");
+      const { error: rollbackError } = await admin.auth.admin.deleteUser(invite.user.id);
+      if (rollbackError) {
+        throw new Error(
+          "The invitation was created but role assignment failed. The account has no app role; remove or retry it from User Management.",
+        );
+      }
+      throwManagementRpcError(
+        roleError,
+        "Could not assign the requested role; the invitation was canceled.",
+      );
     }
-
-    return { id: userId };
-  });
-
-export const setManagedUserRoles = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ userId: z.string().uuid(), roles: rolesSchema }).parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const { isOwner } = await requireAdmin(context);
-    if (data.userId === context.userId) throw httpError(400, "You cannot change your own roles");
-    if (data.roles.includes("owner") && !isOwner) {
-      throw httpError(403, "Only an owner may assign an owner role");
-    }
-    const { error } = await supabaseAdmin.rpc("admin_set_user_roles", {
-      p_action: "roles_changed",
-      p_actor_id: context.userId,
-      p_roles: data.roles,
-      p_target_id: data.userId,
-    });
-    if (error) throw new Error(error.message || "Could not update user roles");
     return { ok: true };
   });
 
-export const setManagedUserSuspension = createServerFn({ method: "POST" })
+export const updateManagedUserRoles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid(), roles: roleListSchema }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await authorizeAdmin(context);
+    const admin = await getAdminClient();
+    const { error } = await admin.rpc("admin_set_user_roles", {
+      p_actor_id: context.userId,
+      p_target_id: data.userId,
+      p_roles: data.roles,
+      p_action: "roles_changed",
+    });
+    if (error) throwManagementRpcError(error, "Could not update user roles");
+    return { ok: true };
+  });
+
+export const setManagedUserSuspended = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
         userId: z.string().uuid(),
         suspended: z.boolean(),
-        reason: z.string().trim().max(500).nullable(),
+        reason: z.string().trim().max(500).optional(),
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
-    await requireAdmin(context);
-    if (data.userId === context.userId) throw httpError(400, "You cannot suspend yourself");
-    const { error } = await supabaseAdmin.rpc("admin_set_user_suspension", {
-      p_actor_id: context.userId,
-      p_reason: data.reason,
-      p_suspended: data.suspended,
-      p_target_id: data.userId,
+  .handler(async ({ context, data }) => {
+    await authorizeAdmin(context);
+    const admin = await getAdminClient();
+
+    if (data.suspended) {
+      const { error: stateError } = await admin.rpc("admin_set_user_suspension", {
+        p_actor_id: context.userId,
+        p_target_id: data.userId,
+        p_suspended: true,
+        ...(data.reason === undefined ? {} : { p_reason: data.reason }),
+      });
+      if (stateError) throwManagementRpcError(stateError, "Could not suspend this account");
+
+      const { error: authError } = await admin.auth.admin.updateUserById(data.userId, {
+        ban_duration: "876000h",
+      });
+      return {
+        ok: true,
+        warning: authError
+          ? "App access is revoked, but Supabase could not block future sign-ins. Retry suspension or contact the project administrator."
+          : null,
+      };
+    }
+
+    const { error: unbanError } = await admin.auth.admin.updateUserById(data.userId, {
+      ban_duration: "none",
     });
-    if (error) throw new Error(error.message || "Could not update user status");
-    return { ok: true };
+    if (unbanError) throw new Error("Could not restore sign-in; the account remains suspended.");
+
+    const { error: stateError } = await admin.rpc("admin_set_user_suspension", {
+      p_actor_id: context.userId,
+      p_target_id: data.userId,
+      p_suspended: false,
+    });
+    if (stateError) {
+      throw new Error(
+        "Sign-in was restored, but application access remains suspended. Retry the restore action.",
+      );
+    }
+    return { ok: true, warning: null };
   });
 
 export const deleteManagedUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { isOwner } = await requireAdmin(context);
-    if (data.userId === context.userId) throw httpError(400, "You cannot delete your own account");
+  .inputValidator((input) =>
+    z
+      .object({ userId: z.string().uuid(), confirmationEmail: z.string().trim().email().max(320) })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await authorizeAdmin(context);
+    const admin = await getAdminClient();
 
-    const users = await listManagedUsers();
-    const target = users.find((user) => user.id === data.userId);
-    if (!target) throw new Error("User not found");
-    if (target.roles.includes("owner") && !isOwner) {
-      throw httpError(403, "Only an owner may delete an owner account");
-    }
-
-    const activeElevated = users.filter(
-      (user) => !user.suspended && user.roles.some((role) => role === "admin" || role === "owner"),
+    const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(
+      data.userId,
     );
-    const activeOwners = users.filter((user) => !user.suspended && user.roles.includes("owner"));
-    if (target.roles.includes("owner") && activeOwners.length <= 1) {
-      throw httpError(400, "The final active owner cannot be deleted");
+    if (authUserError || !authUser.user?.email) {
+      throw new Error("Could not verify the account email; no changes were made.");
     }
-    if (
-      target.roles.some((role) => role === "admin" || role === "owner") &&
-      activeElevated.length <= 1
-    ) {
-      throw httpError(400, "The final active administrator cannot be deleted");
+    if (authUser.user.email.trim().toLowerCase() !== data.confirmationEmail.toLowerCase()) {
+      throw httpError(400, "The confirmation email does not match this account.");
     }
 
-    const { error: auditError } = await supabaseAdmin.rpc("admin_log_user_action", {
-      p_action: "deleted",
+    const { count, error: documentsError } = await admin
+      .from("player_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("created_by", data.userId);
+    if (documentsError) throw new Error("Could not verify whether this account owns staff records");
+    if ((count ?? 0) > 0) {
+      throw httpError(
+        409,
+        "This account authored player documents. Reassign those records before permanent deletion; you can suspend the account now instead.",
+      );
+    }
+
+    const { error: stateError } = await admin.rpc("admin_set_user_suspension", {
       p_actor_id: context.userId,
-      p_details: { email: target.email, roles: target.roles },
       p_target_id: data.userId,
+      p_suspended: true,
+      p_reason: "Permanent deletion requested by an administrator",
     });
-    if (auditError) throw new Error(auditError.message || "Could not record the deletion");
+    if (stateError) throwManagementRpcError(stateError, "Could not revoke account access");
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (error) throw new Error(error.message || "Could not delete user");
-    return { ok: true };
+    const { error: banError } = await admin.auth.admin.updateUserById(data.userId, {
+      ban_duration: "876000h",
+    });
+    if (banError) {
+      throw new Error(
+        "Application access is revoked, but deletion stopped because sign-in could not be blocked.",
+      );
+    }
+
+    const { error: rolesError } = await admin.rpc("admin_set_user_roles", {
+      p_actor_id: context.userId,
+      p_target_id: data.userId,
+      p_roles: [],
+      p_action: "roles_changed",
+    });
+    if (rolesError) {
+      throwManagementRpcError(rolesError, "Could not remove application roles before deletion");
+    }
+
+    const { error: deleteError } = await admin.auth.admin.deleteUser(data.userId);
+    if (deleteError) {
+      throw new Error(
+        "The account is suspended and its app roles are removed, but permanent deletion failed. Resolve linked records and retry; reassign roles only if access should be restored.",
+      );
+    }
+
+    const { error: auditError } = await admin.rpc("admin_log_user_action", {
+      p_actor_id: context.userId,
+      p_target_id: data.userId,
+      p_action: "deleted",
+      p_details: {},
+    });
+    return {
+      ok: true,
+      warning: auditError
+        ? "The account was deleted, but the audit event could not be recorded."
+        : null,
+    };
   });
