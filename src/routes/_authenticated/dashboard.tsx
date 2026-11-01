@@ -239,7 +239,10 @@ function IntakeInbox() {
       {q.isLoading ? (
         <p className="py-6 text-center text-muted-foreground">Loading intake…</p>
       ) : q.error ? (
-        <p className="py-6 text-center text-destructive">Could not load public submissions.</p>
+        <p className="py-6 text-center text-destructive">
+          Could not load public submissions. Check the server-side SUPABASE_SERVICE_ROLE_KEY and
+          confirm it matches SUPABASE_URL; verify migration 0020 is applied to that project.
+        </p>
       ) : (
         <div className="mt-5 grid gap-6 xl:grid-cols-2">
           <IntakeList

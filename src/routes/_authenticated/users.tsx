@@ -43,6 +43,12 @@ import {
 type AppRole = "parent" | "player" | "coach" | "admin" | "owner";
 type ConfirmAction = { kind: "suspend" | "reactivate" | "delete"; user: ManagedUser } | null;
 
+function safeLoadErrorMessage(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message || /<!doctype\s+html|<html[\s>]/i.test(message)) return fallback;
+  return message;
+}
+
 const ROLE_OPTIONS: { role: AppRole; label: string; description: string }[] = [
   { role: "parent", label: "Parent", description: "Parent portal account" },
   { role: "player", label: "Player", description: "Player account" },
@@ -202,9 +208,9 @@ function UserManagementPage() {
 
         {usersQuery.isError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-            {errorMessage(
+            {safeLoadErrorMessage(
               usersQuery.error,
-              "Unable to load user accounts. Admin access is required.",
+              "Could not load user accounts. Verify SUPABASE_SERVICE_ROLE_KEY is set in the cPanel Node.js runtime for the same project as SUPABASE_URL, then restart the app. Do not prefix the key with VITE_.",
             )}
           </div>
         ) : null}

@@ -62,6 +62,10 @@ The `cpanel-start.js` file is the cPanel startup shim. It imports the generated 
 
 The checked-in `supabase/config.toml` targets the `buruj-skyport-staging` project. Confirm the production project separately before running any CLI migration or deployment command against production.
 
+### Troubleshooting admin data screens
+
+The `/users` page and public enquiries/trial inbox use the server-only Supabase admin client. If either screen fails while sign-in works, confirm `SUPABASE_SERVICE_ROLE_KEY` is set in **Setup Node.js App → Environment variables**, without a `VITE_` prefix, and that it belongs to the same project as `SUPABASE_URL` and the build-time `VITE_SUPABASE_URL`. Save the setting and restart the Node.js app. Also confirm the target project has the admin-user migrations (`0019` and `0022`) and public contact/trial migration (`0020`) applied. Never work around this by exposing the service-role key or adding public table policies.
+
 GitHub is optional. You can transfer the source with FTP or upload a ZIP through File Manager; Git integration only automates fetching future code changes.
 
 ## Admin user management
